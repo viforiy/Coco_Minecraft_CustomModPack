@@ -1,0 +1,13 @@
+name = "PlayerLocatorPlus NeoForged"
+filename = "player-locator-plus-neoforged-1.21.1-2.5.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/rfrQ6buJ/versions/JnjZOXii/player-locator-plus-neoforged-1.21.1-2.5.1.jar"
+hash-format = "sha512"
+hash = "7abc7e439a9968721272b00f22617a355750c63cb4bc91321636e4d29673466705a3e2e93ecf160176ea3754e224a61e2f50e538e8ac4aab10868cd2f6bdf514"
+
+[update]
+[update.modrinth]
+mod-id = "rfrQ6buJ"
+version = "JnjZOXii"

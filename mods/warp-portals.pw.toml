@@ -1,0 +1,8 @@
+name = "warp-portals"
+filename = "warp-portals-1.4.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/Ub1JbeSt/versions/drnSaiMo/warp-portals-1.4.0.jar?mr_download_reason=standalone&mr_game_version=1.21&mr_loader=fabric"
+hash-format = "sha256"
+hash = "95907ded67d97154367b5b3c7676c3e67f92db4874d790b6d305308a2c82bcfa"
