@@ -511,6 +511,11 @@ hash = "12d0d7a2bd4522d394fce37639988b3ce075e714994a07ea95ffb143b6e9ffd9"
 metafile = true
 
 [[files]]
+file = "mods/touhou-little-maid.pw.toml"
+hash = "f3cf6caa22a19e0993cac2299ad3c3e84f9c104a8cae49d57e1d4f3c9d1bf1f6"
+metafile = true
+
+[[files]]
 file = "mods/trashslot.pw.toml"
 hash = "c1e0c805d5ccd49535a6820aa8a2461a516437f90312fcadd393f928e3ce7bf2"
 metafile = true
