@@ -1,6 +1,6 @@
 name = "bad packets"
 filename = "badpackets-neo-0.8.2.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/ftdbN0KK/versions/RNyYl9M3/badpackets-neo-0.8.2.jar"

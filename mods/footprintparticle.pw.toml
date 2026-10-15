@@ -1,6 +1,6 @@
 name = "FootprintParticle"
 filename = "footprintparticle-0.6.0+1.21.1-neoforge.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/xZQOoOaY/versions/y7EunQuM/footprintparticle-0.6.0%2B1.21.1-neoforge.jar"

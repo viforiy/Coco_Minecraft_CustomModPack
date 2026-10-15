@@ -1,6 +1,6 @@
 name = "Enchantment Descriptions"
 filename = "enchdesc-neoforge-1.21.1-21.1.11.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/UVtY3ZAC/versions/IktklYWh/enchdesc-neoforge-1.21.1-21.1.11.jar"

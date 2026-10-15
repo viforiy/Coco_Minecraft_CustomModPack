@@ -1,6 +1,6 @@
 name = "isometric-renders"
 filename = "isometric-renders-0.4.7+1.21.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/M0aimenU/versions/KimpqFwb/isometric-renders-0.4.7%2B1.21.jar?mr_download_reason=standalone&mr_game_version=1.21&mr_loader=fabric"

@@ -1,6 +1,6 @@
 name = "YUNG's API"
 filename = "YungsApi-1.21.1-NeoForge-5.1.9.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/Ua7DFN59/versions/2prKITKh/YungsApi-1.21.1-NeoForge-5.1.9.jar"

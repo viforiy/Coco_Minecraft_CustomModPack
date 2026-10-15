@@ -1,6 +1,6 @@
 name = "CreativeCore"
 filename = "CreativeCore_NEOFORGE_v2.13.51_mc1.21.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/OsZiaDHq/versions/vRMtFt35/CreativeCore_NEOFORGE_v2.13.51_mc1.21.1.jar"

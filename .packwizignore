@@ -6,3 +6,12 @@
 
 # Exclude md file
 *.md
+
+# Exclude exe file
+*.exe
+
+# Exclude bat file
+*.bat
+
+#Exclude git file
+.git
