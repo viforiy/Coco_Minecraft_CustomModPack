@@ -551,6 +551,11 @@ hash = "12d0d7a2bd4522d394fce37639988b3ce075e714994a07ea95ffb143b6e9ffd9"
 metafile = true
 
 [[files]]
+file = "mods/tacz-1.21.1.pw.toml"
+hash = "71944dea59c3df21fd71d4ea2d75d3e34ab159c2c39f047269e14b203416afb5"
+metafile = true
+
+[[files]]
 file = "mods/touhou-little-maid.pw.toml"
 hash = "f3cf6caa22a19e0993cac2299ad3c3e84f9c104a8cae49d57e1d4f3c9d1bf1f6"
 metafile = true
