@@ -141,6 +141,11 @@ hash = "a38d72ca403e9064338be6e0cf69532768b0c1aba8f88703a8ce74c2734da522"
 metafile = true
 
 [[files]]
+file = "mods/construction-wand-kots.pw.toml"
+hash = "8f88f0197bab619a5f15e69a9675d1de32e07dbe2664ff1e35e40b04bde01f33"
+metafile = true
+
+[[files]]
 file = "mods/continuity.pw.toml"
 hash = "2e082857985c7550efdad38a1997b9805051b07fb61b0cd30921e786a8521130"
 metafile = true
@@ -173,6 +178,11 @@ metafile = true
 [[files]]
 file = "mods/creeperconfetti-plus.pw.toml"
 hash = "e74117882357e5665631dec329bce153c78ea1d428b3b5405483099289d88b89"
+metafile = true
+
+[[files]]
+file = "mods/displaycase.pw.toml"
+hash = "f466176613569fa62d77533c3bdf7d522a04fcf77375a38c9277403c2d3f15c6"
 metafile = true
 
 [[files]]
@@ -271,6 +281,11 @@ hash = "108739f2fdaa6a885a3217ae692b2521ab10b8e71fa1222c67274ea0562649a5"
 metafile = true
 
 [[files]]
+file = "mods/fzzy-config.pw.toml"
+hash = "932c65fb598293dba5dc60a76fc64c2579db427018b10dd4757dd421d9abcaf0"
+metafile = true
+
+[[files]]
 file = "mods/harvest-with-ease.pw.toml"
 hash = "1e5b320ad839b14df9754644d36a10bc745bf165da797b9b195136ee6b1f06a7"
 metafile = true
@@ -293,6 +308,11 @@ metafile = true
 [[files]]
 file = "mods/immersive-melodies.pw.toml"
 hash = "ba3f520344bc43b437b03e4d0fbbcbffd5225850ed4e3d5ea1d4e8d9b339b506"
+metafile = true
+
+[[files]]
+file = "mods/immersive-paintings.pw.toml"
+hash = "f4f4f93fd59e6a43e7484b44c667875cc8a5d8e5621d98b61e8944c9e0838d61"
 metafile = true
 
 [[files]]
@@ -386,6 +406,11 @@ hash = "ba92f5ae92a9c91d696981d4b7ef723748b7e5f3578b331236d06ce137cf4e32"
 metafile = true
 
 [[files]]
+file = "mods/mcef.pw.toml"
+hash = "92b4b8c5d262a7a56d88fe054872ea250dc55680a6bf040c3f97c6e597fbfae1"
+metafile = true
+
+[[files]]
 file = "mods/mezzconfig.pw.toml"
 hash = "cf5d87f046590b99d92096a79f6ea2f456290ba5d423c256f06674d2d10a1592"
 metafile = true
@@ -453,6 +478,11 @@ metafile = true
 [[files]]
 file = "mods/pick-up-notifier.pw.toml"
 hash = "49c0bacf8e4cb3ade6c384ad379282f92d7fa3075f2affd8e3093feb685288dd"
+metafile = true
+
+[[files]]
+file = "mods/placeable-items.pw.toml"
+hash = "d4c1f210bcbcbb1ca89ed3512be830d7ff7feeb3f332b233b1e7fe2ea148ae15"
 metafile = true
 
 [[files]]
@@ -561,6 +591,11 @@ hash = "12d0d7a2bd4522d394fce37639988b3ce075e714994a07ea95ffb143b6e9ffd9"
 metafile = true
 
 [[files]]
+file = "mods/supplementaries.pw.toml"
+hash = "b88bbb62ccc2222c4736899745678d83e2dff37bf29ceff94cca94a90a7b68fe"
+metafile = true
+
+[[files]]
 file = "mods/tacz-1.21.1.pw.toml"
 hash = "71944dea59c3df21fd71d4ea2d75d3e34ab159c2c39f047269e14b203416afb5"
 metafile = true
@@ -593,6 +628,11 @@ metafile = true
 [[files]]
 file = "mods/waystones.pw.toml"
 hash = "2dad5577c5ec5e73bb3d5cec8da606e3b72e384207c9291a25e1ae96fd20bb70"
+metafile = true
+
+[[files]]
+file = "mods/webdisplays-remaster.pw.toml"
+hash = "285c60f3bd420cc176ba890c212f26c7d1560ab78b3de8c891fe4f728b359005"
 metafile = true
 
 [[files]]

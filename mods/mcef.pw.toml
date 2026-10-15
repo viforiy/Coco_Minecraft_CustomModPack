@@ -1,0 +1,13 @@
+name = "MCEF (Minecraft Chromium Embedded Framework)"
+filename = "mcef-neoforge-2.1.6-1.21.1.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/TObQ0HxZ/versions/euXLgkSB/mcef-neoforge-2.1.6-1.21.1.jar"
+hash-format = "sha512"
+hash = "8b45e271ca3b40dd714a2e6389ac460cff476b85b5cc7b57993f0cf0e0c0727d99768757c7ec0ab10600ccc75cb7e95f603c2b3fe77a9bb6c9492da4cb857ccb"
+
+[update]
+[update.modrinth]
+mod-id = "TObQ0HxZ"
+version = "euXLgkSB"
