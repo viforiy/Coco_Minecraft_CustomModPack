@@ -1,0 +1,13 @@
+name = "Awesome Dungeon Ocean"
+filename = "awesomedungeonocean-neoforge-1.21.1-3.3.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/hn56Bq5n/versions/4oZY86TA/awesomedungeonocean-neoforge-1.21.1-3.3.0.jar"
+hash-format = "sha512"
+hash = "12ef67f277bbca449e9258e1868492f452607c190cd70a6bb150a7b506c9537d8c39a7532e0fcaa3c2f7cad183efb4099f2775fe467548c33c5adb2692d02a45"
+
+[update]
+[update.modrinth]
+mod-id = "hn56Bq5n"
+version = "4oZY86TA"

@@ -1,0 +1,8 @@
+name = "SkyArena"
+filename = "SkyArena-1.3.6-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://mediafilez.forgecdn.net/files/7053/645/SkyArena-1.3.6-1.21.1.jar"
+hash-format = "sha256"
+hash = "376accd0213cc4d7a7c02ec2c333b9179c2a98a7c334cb292b584b673e2cffbb"

@@ -1,0 +1,13 @@
+name = "Exp Ore"
+filename = "expore-1.21.1-0.3.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/1HwCh5vX/versions/VfJvq9wc/expore-1.21.1-0.3.jar"
+hash-format = "sha512"
+hash = "992c400518aec634d64b78f01516f9a15ad0f5779ef14b278256de17627f670f1c4f1cb71b1d7ee74bb29b6b466f5ae8b364d5b6ea2df9a0b908f2c87207a65b"
+
+[update]
+[update.modrinth]
+mod-id = "1HwCh5vX"
+version = "VfJvq9wc"
