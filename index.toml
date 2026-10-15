@@ -6,6 +6,11 @@ hash = "f775c1801ced53810ea696b5fc603b5ca073153de3ad3ca52bf7942dcaf30f32"
 metafile = true
 
 [[files]]
+file = "mods/ambientsounds.pw.toml"
+hash = "cbce99e396e7237be263e91001785d9811f4e7133dd0e556ab7c646ea37b20f3"
+metafile = true
+
+[[files]]
 file = "mods/appleskin.pw.toml"
 hash = "716d930feff599bf9ce732e05979fbae8025dc8a3c13ccf4f1cb207a70883bc6"
 metafile = true
@@ -23,6 +28,11 @@ metafile = true
 [[files]]
 file = "mods/better-advanced-tooltips.pw.toml"
 hash = "03084ff4f74cedc1b8ac6c85a98842f75956fb4fa811d285d8ca7caa8d54da5d"
+metafile = true
+
+[[files]]
+file = "mods/better-foliage-renewed.pw.toml"
+hash = "01fcacd1e98c9c7e4e78dde9991229c58b2bbe36da5f5beda5001c5aa19f8e72"
 metafile = true
 
 [[files]]
@@ -71,8 +81,18 @@ hash = "a38d72ca403e9064338be6e0cf69532768b0c1aba8f88703a8ce74c2734da522"
 metafile = true
 
 [[files]]
+file = "mods/continuity.pw.toml"
+hash = "2e082857985c7550efdad38a1997b9805051b07fb61b0cd30921e786a8521130"
+metafile = true
+
+[[files]]
 file = "mods/coroutil.pw.toml"
 hash = "d901f874a1e09747b8d0d072c38c426eceead1f29c8ba36680f8f0082996b152"
+metafile = true
+
+[[files]]
+file = "mods/creativecore.pw.toml"
+hash = "63d1560de24b53cad7052d19c1a44b4eab64ad9f696d01c9f2a72fccd5540557"
 metafile = true
 
 [[files]]
@@ -86,8 +106,28 @@ hash = "41ddb2dfcf6b2d87bd52d0fb8dc9c8c3a7e3e83f9f1cbf9c495ab195333dfbd9"
 metafile = true
 
 [[files]]
+file = "mods/dynamicsurroundingsfabric.pw.toml"
+hash = "6b0b4381c551c1466f8368c9358d072dc44d92712129b819d1ef2ac27832235a"
+metafile = true
+
+[[files]]
 file = "mods/enchantment-descriptions.pw.toml"
 hash = "88b9e727611f06350c407aeb4ccb41207b5058fef127abe0ff24c13505618aaf"
+metafile = true
+
+[[files]]
+file = "mods/entity-model-features.pw.toml"
+hash = "c875585a3269432ba23b379665cb287bd88517c7dbc1a22d0b5df9294f0a2ba4"
+metafile = true
+
+[[files]]
+file = "mods/entitytexturefeatures.pw.toml"
+hash = "37ae0fc372cc387710fb7cb525f79a405e88f9e88786f83c1e0834e127997d35"
+metafile = true
+
+[[files]]
+file = "mods/fallingleavesforge.pw.toml"
+hash = "e5125f8f2709fd20f8182fade3d7f9e7129872c63f042c5489c6eba4733b6b49"
 metafile = true
 
 [[files]]
@@ -101,8 +141,23 @@ hash = "c6f7ac0ee34063f557dc358953879e897b9bdcb9f9922aaf7573f4d311762270"
 metafile = true
 
 [[files]]
+file = "mods/footprintparticle.pw.toml"
+hash = "d9fc5501ab126054b04be0728087cc0c1f3f713d02fcdbbc35b2a7082cacea48"
+metafile = true
+
+[[files]]
 file = "mods/forgified-fabric-api.pw.toml"
 hash = "c490f7b680875f034af39a1556911d6edb1dcdd76a114ee6a4eca0f158cd92b2"
+metafile = true
+
+[[files]]
+file = "mods/freecam.pw.toml"
+hash = "184c6768f11e0c33c22c104397ad559c5b9337c709d1d05c8e9c93891dcddaee"
+metafile = true
+
+[[files]]
+file = "mods/fusion-connected-textures.pw.toml"
+hash = "108739f2fdaa6a885a3217ae692b2521ab10b8e71fa1222c67274ea0562649a5"
 metafile = true
 
 [[files]]
@@ -116,6 +171,11 @@ hash = "91a73d149ab0a877d9a0ab5c10b0938ca049f23e23632db31aea834cd002252c"
 metafile = true
 
 [[files]]
+file = "mods/immersive-melodies.pw.toml"
+hash = "ba3f520344bc43b437b03e4d0fbbcbffd5225850ed4e3d5ea1d4e8d9b339b506"
+metafile = true
+
+[[files]]
 file = "mods/inventory-profiles-next.pw.toml"
 hash = "ab503e89461dff879ee793253e173625b6ab868f570a371323ef725e567cf5ea"
 metafile = true
@@ -123,6 +183,11 @@ metafile = true
 [[files]]
 file = "mods/iris.pw.toml"
 hash = "db1c1e6382878b78e994dba1b9026935f8d1c5ca685c89d2437858e0a0dcab58"
+metafile = true
+
+[[files]]
+file = "mods/isometric-renders.pw.toml"
+hash = "3ce68fda8d875d86949efa412ef3a09ef9d675ff1f74e9dff834bf60ec91b539"
 metafile = true
 
 [[files]]
@@ -171,6 +236,11 @@ hash = "6bc414cc0f2d4c078fe83f384d786343f701f371d657c5279b5b0df1595804bd"
 metafile = true
 
 [[files]]
+file = "mods/o-o.pw.toml"
+hash = "840864ee19299b21aa1f8d608eeff765a2f650c2234a040058f7e19ff40046f8"
+metafile = true
+
+[[files]]
 file = "mods/ok-zoomer.pw.toml"
 hash = "413494b5ba534461e22545173a8cc6e98b04962a0ee9514498b830b99d4acabe"
 metafile = true
@@ -178,6 +248,11 @@ metafile = true
 [[files]]
 file = "mods/patpat.pw.toml"
 hash = "0b24c1d1c740b7b5dfba1afc97c9fadd0e6fce127de8ed8d5e3b568f57bed9ac"
+metafile = true
+
+[[files]]
+file = "mods/pf-neoforge.pw.toml"
+hash = "1ef7ce6d5fe6e584914680f5463508996f0dd1c2bdbc051b8b3b050c85e134ff"
 metafile = true
 
 [[files]]
@@ -198,6 +273,16 @@ metafile = true
 [[files]]
 file = "mods/raws-visual-keybinder.pw.toml"
 hash = "8e1a3347cb6f5429b3e32f7f6106e5cf35531c0c4216059e6081aaecb5e4d4cb"
+metafile = true
+
+[[files]]
+file = "mods/reforgedplay-mod.pw.toml"
+hash = "99b7b21225001039f903262df1571060468fad4d3994c017559586c751e314f4"
+metafile = true
+
+[[files]]
+file = "mods/shoulder-surfing-reloaded.pw.toml"
+hash = "bcce409dc3bd3c765d92538e192563b4baf345a843acb5fb9c90fce4ebccdf58"
 metafile = true
 
 [[files]]
@@ -253,6 +338,16 @@ metafile = true
 [[files]]
 file = "mods/what-are-they-up-to.pw.toml"
 hash = "9ce52d07c0c3d146a2a44f8bc187138ce7a5558a4e3ab540c86234702b6de274"
+metafile = true
+
+[[files]]
+file = "mods/windchime.pw.toml"
+hash = "dc8ed5b9004c18d208b94a56ce5fa41e62ef9497356b64cd7d83c92e7fd3f842"
+metafile = true
+
+[[files]]
+file = "mods/yes-steve-model.pw.toml"
+hash = "86a3fbce316c2d2e051df6915302d4417496fec60ae6f12ae24f54f823b61047"
 metafile = true
 
 [[files]]
