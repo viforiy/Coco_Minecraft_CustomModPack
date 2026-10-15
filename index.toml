@@ -126,6 +126,11 @@ hash = "75181b55e0407d1fca1e2f346c6501f919f5109545990ddfb66db9cd1b771f8a"
 metafile = true
 
 [[files]]
+file = "mods/cobweb.pw.toml"
+hash = "23f681379a3e647a59f0749d25f2ce0725d4afafeed41871c5c87f2658d13a72"
+metafile = true
+
+[[files]]
 file = "mods/collective.pw.toml"
 hash = "136af191b860ebf7967a748fe20457b8b1712e9d6095413dce23def1ed28468b"
 metafile = true
@@ -256,6 +261,11 @@ hash = "108739f2fdaa6a885a3217ae692b2521ab10b8e71fa1222c67274ea0562649a5"
 metafile = true
 
 [[files]]
+file = "mods/harvest-with-ease.pw.toml"
+hash = "1e5b320ad839b14df9754644d36a10bc745bf165da797b9b195136ee6b1f06a7"
+metafile = true
+
+[[files]]
 file = "mods/held-item-info-neoforge.pw.toml"
 hash = "e381614dc48bb664b1fd1765ae69ec4ee05babad8b847fe1a1b6bb8fd2180fcc"
 metafile = true
@@ -308,6 +318,11 @@ metafile = true
 [[files]]
 file = "mods/justenoughcharacters.pw.toml"
 hash = "bd8ab71fde9e3530444600d30705bab2b97bd62bffb69a337608d4c50174255c"
+metafile = true
+
+[[files]]
+file = "mods/kaleidoscope-cookery.pw.toml"
+hash = "dfeca78ef8f2d2de9b227e684f2314b5ae869841c040e2903d1a7429299acbf7"
 metafile = true
 
 [[files]]
