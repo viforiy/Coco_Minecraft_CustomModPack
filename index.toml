@@ -156,6 +156,11 @@ hash = "349b56aa9ea8284fb89e880941d319ce52e50e51d63084472ea93493cff105b7"
 metafile = true
 
 [[files]]
+file = "mods/create.pw.toml"
+hash = "dcaf5f2e28db0b9a127d0167456832341045ddc9aec058c3d9fcf53f618d2404"
+metafile = true
+
+[[files]]
 file = "mods/creativecore.pw.toml"
 hash = "63d1560de24b53cad7052d19c1a44b4eab64ad9f696d01c9f2a72fccd5540557"
 metafile = true
@@ -358,6 +363,11 @@ metafile = true
 [[files]]
 file = "mods/magnum-torch.pw.toml"
 hash = "e0eb9856cfbcefd70a853efd4e5ab8deb6a3add9f97f927860ed19b8055f8b88"
+metafile = true
+
+[[files]]
+file = "mods/maidusehandcrank.pw.toml"
+hash = "ba92f5ae92a9c91d696981d4b7ef723748b7e5f3578b331236d06ce137cf4e32"
 metafile = true
 
 [[files]]
