@@ -1,0 +1,13 @@
+name = "Better ModList"
+filename = "better_modlist-21.1.4.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/sbpqhzIG/versions/ZID4kkto/better_modlist-21.1.4.jar"
+hash-format = "sha512"
+hash = "932ab8d8b095fd3ce5a61d1ce9103174e36bf5b1ce2975b24b5722965f0755be20c6d4d9501f42b4b692317b87f0b36a21cfcefd258e2f00fcfd9665de71fbbe"
+
+[update]
+[update.modrinth]
+mod-id = "sbpqhzIG"
+version = "ZID4kkto"

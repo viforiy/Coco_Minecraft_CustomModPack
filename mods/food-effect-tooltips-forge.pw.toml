@@ -1,0 +1,13 @@
+name = "Food Effect Tooltips (Forge)"
+filename = "foodeffecttooltips+neoforge-1.21.1-1.6.0.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/aetFpEaA/versions/tdLFV1tE/foodeffecttooltips%2Bneoforge-1.21.1-1.6.0.jar"
+hash-format = "sha512"
+hash = "f327c691819e86a3a4f2ebe97ad13de9f70d4672f435db4db8029383b8ec2be2d7e80d934b3beb23eeb81b80415e28d71b495adb0dcc82cda380fac5153a247a"
+
+[update]
+[update.modrinth]
+mod-id = "aetFpEaA"
+version = "tdLFV1tE"
