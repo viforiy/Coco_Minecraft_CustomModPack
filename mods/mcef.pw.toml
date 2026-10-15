@@ -1,6 +1,6 @@
 name = "MCEF (Minecraft Chromium Embedded Framework)"
 filename = "mcef-neoforge-2.1.6-1.21.1.jar"
-side = "client"
+side = "both"
 
 [download]
 url = "https://cdn.modrinth.com/data/TObQ0HxZ/versions/euXLgkSB/mcef-neoforge-2.1.6-1.21.1.jar"
