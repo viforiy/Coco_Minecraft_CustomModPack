@@ -1,0 +1,13 @@
+name = "No Friendly Fire (Updated)"
+filename = "nofriendlyfire-1.1-neoforge-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/A6WVEVOh/versions/YzqF3pzB/nofriendlyfire-1.1-neoforge-1.21.1.jar"
+hash-format = "sha512"
+hash = "41544895fa1a5e0c7cb039c9dbb4d830591f494be9c3a38bdd1c2a8a0ba06e6f7a1722a3a84b8a8b01b3f532a39f02d5833fe8c993ee2de5998ac95f38017024"
+
+[update]
+[update.modrinth]
+mod-id = "A6WVEVOh"
+version = "YzqF3pzB"

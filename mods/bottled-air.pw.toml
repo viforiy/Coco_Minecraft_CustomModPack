@@ -1,0 +1,13 @@
+name = "Bottled Air"
+filename = "bottledair-1.21.1-2.6.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/hvrrNux3/versions/7lOpGEya/bottledair-1.21.1-2.6.jar"
+hash-format = "sha512"
+hash = "ac1f4d81b9ad46040e54d3e2fd02905dad541bdc23875d430b1b9d08fbbfd963425846e52340788c4c5119a6bc29279b0b67c0e3ddb0857694cb119c191482cb"
+
+[update]
+[update.modrinth]
+mod-id = "hvrrNux3"
+version = "7lOpGEya"

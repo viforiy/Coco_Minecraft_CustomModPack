@@ -1,0 +1,13 @@
+name = "Sneak Through Berries"
+filename = "sneak_through_berries-neoforge-21.1.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/xq3wqd0E/versions/jxID7Dx0/sneak_through_berries-neoforge-21.1.0.jar"
+hash-format = "sha512"
+hash = "9529f3b055c28375ebffe9848436b35ed8e61996d94c0c72a3434888eecdbea15a5ee4487290fac35beac993a53cc8c75cd8028820b21e3477b9e67460b9d0ec"
+
+[update]
+[update.modrinth]
+mod-id = "xq3wqd0E"
+version = "jxID7Dx0"

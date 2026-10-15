@@ -1,0 +1,13 @@
+name = "ClickThrough Plus"
+filename = "clickthrough-plus-3.3+1.21.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/fJi8nm80/versions/QRrKVNIN/clickthrough-plus-3.3%2B1.21.jar"
+hash-format = "sha512"
+hash = "8e4b8502b5a5df989c0cbd6ec478279e68ad80764abf5537387a406bac3bec72d994be0ade6f9451cac92069f435faee550787da571bdbc2aea87d2bf51ddc23"
+
+[update]
+[update.modrinth]
+mod-id = "fJi8nm80"
+version = "QRrKVNIN"

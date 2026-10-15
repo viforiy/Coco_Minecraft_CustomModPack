@@ -1,0 +1,13 @@
+name = "Accessible Step"
+filename = "accessible-step-neoforge-1.21.1-2.4.0+1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/z6d6n7ve/versions/JQPkkeZC/accessible-step-neoforge-1.21.1-2.4.0%2B1.21.1.jar"
+hash-format = "sha512"
+hash = "10e0fd17a72a8b37e184236912c30a9ccf5fc8e019dc721823fa78de9f10c9cf36aa317917253938915fe9569bde141737063446d8814d4fa700cb1e4c4e5728"
+
+[update]
+[update.modrinth]
+mod-id = "z6d6n7ve"
+version = "JQPkkeZC"
