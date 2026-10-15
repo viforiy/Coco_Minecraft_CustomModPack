@@ -251,6 +251,11 @@ hash = "d9fc5501ab126054b04be0728087cc0c1f3f713d02fcdbbc35b2a7082cacea48"
 metafile = true
 
 [[files]]
+file = "mods/forgematica.pw.toml"
+hash = "4db975b2ee5662e7ff24ed9d96539225ce2b056ae1d263d998407f230abc543f"
+metafile = true
+
+[[files]]
 file = "mods/forgified-fabric-api.pw.toml"
 hash = "c490f7b680875f034af39a1556911d6edb1dcdd76a114ee6a4eca0f158cd92b2"
 metafile = true
@@ -371,6 +376,11 @@ hash = "00bacfc5a98d9b0dff90bbad503def28abf970a2061c9456f721e442bc32ab29"
 metafile = true
 
 [[files]]
+file = "mods/kyoyu.pw.toml"
+hash = "71bf084164e41c79cea68ec14e33842d9b9449a7688630ca1488b142c5b7dbab"
+metafile = true
+
+[[files]]
 file = "mods/lan-server-properties.pw.toml"
 hash = "5ff304981d07360fcd58c96803d990886f48a6041af628f75ec65798d440ee79"
 metafile = true
@@ -393,6 +403,11 @@ metafile = true
 [[files]]
 file = "mods/lootr.pw.toml"
 hash = "0d3683a8c533e1fb67bf0b1668089a322fc5f594f9610d441657378ab4f64383"
+metafile = true
+
+[[files]]
+file = "mods/mafglib.pw.toml"
+hash = "2726c6991c3cc6ee3644725fd98759b6d8b2cfd96d0fcb7ad8e266924f741f52"
 metafile = true
 
 [[files]]

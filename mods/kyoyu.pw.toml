@@ -1,0 +1,13 @@
+name = "kyoyu"
+filename = "Kyoyu-v1.2.0-mc1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/VozTPxB4/versions/W48ieHgf/Kyoyu-v1.2.0-mc1.21.1.jar"
+hash-format = "sha512"
+hash = "9a1561b199687b51516857fe43b033942795db2b7612d981baa581c887d259c2ddafed2dc931fb361ea5f3704c9d7a4bb812eb78f1a9e6a9a985b1639f7f0829"
+
+[update]
+[update.modrinth]
+mod-id = "VozTPxB4"
+version = "W48ieHgf"
