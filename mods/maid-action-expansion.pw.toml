@@ -1,0 +1,13 @@
+name = "Maid Action Expansion"
+filename = "action-expansion-1.21.1-neoforge-0.3.0.jar"
+side = "both"
+
+[download]
+hash-format = "sha1"
+hash = "7cd49f9dba3b91ed326a7f4faa031fdafadec947"
+mode = "metadata:curseforge"
+
+[update]
+[update.curseforge]
+file-id = 9202534
+project-id = 1742121

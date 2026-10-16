@@ -581,6 +581,11 @@ hash = "e0eb9856cfbcefd70a853efd4e5ab8deb6a3add9f97f927860ed19b8055f8b88"
 metafile = true
 
 [[files]]
+file = "mods/maid-action-expansion.pw.toml"
+hash = "e785c6756cbd40a87339448cf00e71e53e4d224a57f3134c6c734826c3456077"
+metafile = true
+
+[[files]]
 file = "mods/maidusehandcrank.pw.toml"
 hash = "ba92f5ae92a9c91d696981d4b7ef723748b7e5f3578b331236d06ce137cf4e32"
 metafile = true
@@ -651,11 +656,6 @@ hash = "7e2149adca5224eedf38aa7ba83359a01ad8eecabbe01e28edb2442fff9f50b8"
 metafile = true
 
 [[files]]
-file = "mods/o-o.pw.toml"
-hash = "bdd741541494ae191838acc3ef93d51f79b1efe940c723286cbd534a1a489b13"
-metafile = true
-
-[[files]]
 file = "mods/ok-zoomer.pw.toml"
 hash = "413494b5ba534461e22545173a8cc6e98b04962a0ee9514498b830b99d4acabe"
 metafile = true
@@ -663,6 +663,11 @@ metafile = true
 [[files]]
 file = "mods/open-parties-and-claims.pw.toml"
 hash = "d22d3dad65c22acb508823667ca42d751d919753922a18fae50ccf656fa07a43"
+metafile = true
+
+[[files]]
+file = "mods/owo-lib.pw.toml"
+hash = "46831c04077a06df823bcd0f254833a90a9a9ccc78f5069f4b4c27fa301ac0cf"
 metafile = true
 
 [[files]]
@@ -867,7 +872,7 @@ metafile = true
 
 [[files]]
 file = "mods/touhou-little-maid.pw.toml"
-hash = "f3cf6caa22a19e0993cac2299ad3c3e84f9c104a8cae49d57e1d4f3c9d1bf1f6"
+hash = "0c3cc91d27d1a01c7b976bb0ae9ece8e8e99dfa2b06f38b058a6d34d854619cd"
 metafile = true
 
 [[files]]
