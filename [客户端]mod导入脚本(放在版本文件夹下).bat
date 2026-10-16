@@ -1,8 +1,12 @@
 @echo off
+rem 开启 VT 转义支持（部分系统无效，但无副作用）
+for /f "delims=" %%A in ('echo prompt $E^| cmd') do set "ESC=%%A"
+
 setlocal enabledelayedexpansion
 
 set "mc_path=."
 set "installer_path=%mc_path%/packwiz-installer-bootstrap.jar"
+set "server_url=http://localhost:8080/pack.toml"
 
 if not exist "%installer_path%" (
     echo [错误] 找不到安装器: %installer_path%
@@ -37,13 +41,12 @@ if not defined java_path (
     echo [错误] 未找到 Java 21。请安装 Java 21 或将 JAVA_HOME 指向 Java 21。
     exit /b 1
 )
-
-echo [信息] 已找到 Java 21: !java_path!
+echo [信息] 已找到 Java 21: %ESC%[96m  !java_path!  %ESC%[0m
 "!java_path!" -version 2>&1 | findstr /i version
 
 echo.
 echo [信息] 正在执行 Packwiz 更新，请稍候...
-"!java_path!" -jar "%installer_path%" http://localhost:8080/pack.toml
+"!java_path!" -jar "%installer_path%" %server_url%
 set "rc=!errorlevel!"
 
 if !rc! neq 0 (
@@ -55,8 +58,7 @@ if !rc! neq 0 (
 
 set "SCRIPT_PATH=%~f0"
 
-rem 开启 VT 转义支持（部分系统无效，但无副作用）
-for /f "delims=" %%A in ('echo prompt $E^| cmd') do set "ESC=%%A"
+
 
 echo %ESC%[93m============================================================%ESC%[0m
 echo %ESC%[97;41m  [提示] 请复制下方脚本引用路径, 不要移动脚本本身, 保持放在整合包版本文件夹下  %ESC%[0m
