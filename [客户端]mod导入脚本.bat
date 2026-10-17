@@ -6,7 +6,7 @@ setlocal enabledelayedexpansion
 
 set "mc_path=."
 set "installer_path=%mc_path%/packwiz-installer-bootstrap.jar"
-set "server_url=http://localhost:8080/pack.toml"
+set "server_url=http://127.0.0.1:8080/pack.toml"
 
 if not exist "%installer_path%" (
     echo [错误] 找不到安装器: %installer_path%
@@ -56,26 +56,26 @@ if !rc! neq 0 (
 )
 
 
-set "SCRIPT_PATH=%~f0"
+rem ── 生成 PCL 启动前执行命令所需指令并复制到剪贴板 ──
+set "SCRIPT_DIR=%~dp0"
+set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+set "PCL_CMD=cd /d "%SCRIPT_DIR%" && call "%~nx0""
 
 
 
 echo %ESC%[93m============================================================%ESC%[0m
-echo %ESC%[97;41m  [提示] 请复制下方脚本引用路径, 不要移动脚本本身, 保持放在整合包版本文件夹下  %ESC%[0m
+echo %ESC%[97;41m  [提示] 已生成启动前命令并复制到剪贴板, 不要移动脚本本身, 保持放在整合包版本文件夹下  %ESC%[0m
 echo %ESC%[93m============================================================%ESC%[0m
 echo.
 echo 粘贴到：PCL -^> 版本设置 -^> 设置 -^> 高级选项 -^> 启动前执行指令
 echo.
-echo   %ESC%[92m%SCRIPT_PATH%%ESC%[0m
+echo   %ESC%[92m!PCL_CMD!%ESC%[0m
 echo.
 
-echo %SCRIPT_PATH% | clip
-echo %ESC%[96m（已自动复制到剪贴板）%ESC%[0m
+>"%TEMP%\pcl_prelaunch_cmd.txt" echo !PCL_CMD!
+clip < "%TEMP%\pcl_prelaunch_cmd.txt"
+echo %ESC%[96m（已自动复制到剪贴板, 存档: %TEMP%\pcl_prelaunch_cmd.txt）%ESC%[0m
 echo %ESC%[93m============================================================%ESC%[0m
-
-
-exit /b !rc!
-
 
 :: ── 子过程: 从注册表查找 Java ───────────────────────────────────
 :find_java_in_registry
