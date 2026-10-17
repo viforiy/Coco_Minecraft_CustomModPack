@@ -162,7 +162,7 @@ metafile = true
 
 [[files]]
 file = "mods/cloth-config.pw.toml"
-hash = "66b2e57fad1d958893206d82ff878159b7fdfef64ccb74fe1232b71012409953"
+hash = "22286fa216349c0767808903a0a38662857d2adee54950a18cbf26c167a06029"
 metafile = true
 
 [[files]]
@@ -928,6 +928,11 @@ metafile = true
 [[files]]
 file = "mods/windchime.pw.toml"
 hash = "dc8ed5b9004c18d208b94a56ce5fa41e62ef9497356b64cd7d83c92e7fd3f842"
+metafile = true
+
+[[files]]
+file = "mods/x-autofish.pw.toml"
+hash = "245d5637573205f143594938c00fcfaf62245f42c5abfa78174da8a9359d4cb5"
 metafile = true
 
 [[files]]

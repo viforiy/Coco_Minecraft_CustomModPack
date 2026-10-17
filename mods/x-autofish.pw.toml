@@ -1,0 +1,13 @@
+name = "XPlus Autofish (Fabric/Forge/NeoForge)"
+filename = "xplus-autofish-2.0.0-neoforged-mc1.21.1.jar"
+side = "both"
+
+[download]
+hash-format = "sha1"
+hash = "e73547caee5c34f4a286298dc74d9fae48a99122"
+mode = "metadata:curseforge"
+
+[update]
+[update.curseforge]
+file-id = 9044297
+project-id = 879846
