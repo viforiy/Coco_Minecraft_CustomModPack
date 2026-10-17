@@ -1,6 +1,6 @@
 name = "XPlus Autofish (Fabric/Forge/NeoForge)"
 filename = "xplus-autofish-2.0.0-neoforged-mc1.21.1.jar"
-side = "both"
+side = "client"
 
 [download]
 hash-format = "sha1"

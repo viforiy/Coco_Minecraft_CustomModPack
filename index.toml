@@ -932,7 +932,7 @@ metafile = true
 
 [[files]]
 file = "mods/x-autofish.pw.toml"
-hash = "245d5637573205f143594938c00fcfaf62245f42c5abfa78174da8a9359d4cb5"
+hash = "e0631c032ebbdd00f153bd80b5a1e227dfe90e07e799243f83c8cfde80d98432"
 metafile = true
 
 [[files]]
