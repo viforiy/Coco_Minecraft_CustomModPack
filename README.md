@@ -78,3 +78,25 @@ git clone -b tools https://github.com/viforiy/Coco_Minecraft_CustomModPack.git C
 - 更新脚本首次单独运行时请求一次确认并写入标记，此后不再提示；未经部署而直接运行前，请确认目标目录正确。
 - `mods` 目录由脚本依据清单维护，手动放入的 jar 会在下次同步时被覆盖或清理。
 - PW-GUI 为第三方工具，运行需要 Java 17 及以上；二进制文件不纳入版本库，通过 `获取PW-GUI.bat` 获取。
+
+### 维护模组清单（开发者工具）
+
+新增模组后，`mods/*.pw.toml` 与清单文档需要同步更新，用 `维护模组清单.bat` 完成：
+
+```bat
+维护模组清单.bat               :: 交互式处理全部新增模组
+维护模组清单.bat -DryRun       :: 只看差异，不写任何文件
+维护模组清单.bat -NoSide       :: 跳过 side 校正
+维护模组清单.bat -All          :: 不逐个询问是否处理
+维护模组清单.bat -PackDir "D:\包目录"
+```
+
+执行内容：
+
+1. 扫描 `mods/*.pw.toml`，与 `模组列表介绍.md` 中已记录的 slug 比对，列出尚未收录的模组
+2. 通过 Modrinth API 取 `client_side` / `server_side`，给出 `client` / `server` / `both` 建议，确认后写回 `.pw.toml`
+3. 通过版本接口取 required 依赖，自动填入「前置」列
+4. 交互录入中文名、分类、功能描述，插入对应分类的表格并重算该节计数
+5. 若改动了 `.pw.toml`，自动执行 `packwiz refresh`
+
+依赖 Modrinth 公开 API，需要能访问 `api.modrinth.com`；直连失败时会尝试本机 `7890` 代理，也可用 `-Proxy` 显式指定。
