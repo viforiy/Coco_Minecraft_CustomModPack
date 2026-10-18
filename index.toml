@@ -126,6 +126,11 @@ hash = "10f0202cec09255cb9829a89e34ba4b5f993dc44237945903271f6bd33b31291"
 metafile = true
 
 [[files]]
+file = "mods/bridging-mod.pw.toml"
+hash = "f51e0240b5e56fafb5e67ead29884f28123bc520614d5d40fa8f2520b580c965"
+metafile = true
+
+[[files]]
 file = "mods/c2me-neoforge.pw.toml"
 hash = "6b5ca6ccbffb900ed868de62c9c13a09b38ffed36b00e51ceaab5468b6941041"
 metafile = true
@@ -396,6 +401,11 @@ hash = "932c65fb598293dba5dc60a76fc64c2579db427018b10dd4757dd421d9abcaf0"
 metafile = true
 
 [[files]]
+file = "mods/happy-ghast.pw.toml"
+hash = "d7a124610ae81e7e196d95807aa0f929fdc2c3ed358ae8f4f285088b1f01a792"
+metafile = true
+
+[[files]]
 file = "mods/harvest-with-ease.pw.toml"
 hash = "1e5b320ad839b14df9754644d36a10bc745bf165da797b9b195136ee6b1f06a7"
 metafile = true
@@ -453,6 +463,11 @@ metafile = true
 [[files]]
 file = "mods/integrated-api.pw.toml"
 hash = "91e64f115f316af85a1162f327d2b14b4669e6f6dffafc468f633be4317cf3b4"
+metafile = true
+
+[[files]]
+file = "mods/inventory-hud-forge.pw.toml"
+hash = "bacbda049bf918a3a048f017a23e3197a91d31ab905e25f7a811d69d55344ca6"
 metafile = true
 
 [[files]]
@@ -636,6 +651,11 @@ hash = "6bc414cc0f2d4c078fe83f384d786343f701f371d657c5279b5b0df1595804bd"
 metafile = true
 
 [[files]]
+file = "mods/muoniumplayer.pw.toml"
+hash = "f728dfba66ec837fdbdbb58561120cf605adc2f3773eb252bdca55f334f05b75"
+metafile = true
+
+[[files]]
 file = "mods/natures-compass.pw.toml"
 hash = "35acdf433fe8f8599f59975e848efdb717663c2c471d3a5dc18743799795a736"
 metafile = true
@@ -708,6 +728,11 @@ metafile = true
 [[files]]
 file = "mods/prickle.pw.toml"
 hash = "4c3ae8d66598407880f171303e0790d2c30c0cd10804022ea0407059cfd95992"
+metafile = true
+
+[[files]]
+file = "mods/punchy.pw.toml"
+hash = "8d8e60a029cf6325ed1c96a6e5f0d513b1045f552f5a946e29481bdc8c4358e4"
 metafile = true
 
 [[files]]
@@ -881,6 +906,11 @@ hash = "a9afe82b3d1b4975dd9f8b3272898450aeb29365678b3779059977301f88c101"
 metafile = true
 
 [[files]]
+file = "mods/tpatools.pw.toml"
+hash = "44a3316f6fe5123b4645917d71dddbffbd43bdfd7e5954a26745a9901059fa29"
+metafile = true
+
+[[files]]
 file = "mods/trashslot.pw.toml"
 hash = "c1e0c805d5ccd49535a6820aa8a2461a516437f90312fcadd393f928e3ce7bf2"
 metafile = true
@@ -943,6 +973,11 @@ metafile = true
 [[files]]
 file = "mods/xaeros-world-map.pw.toml"
 hash = "f4bc20e3483a7a935b9ee674227aad73d24ecc4ea93e6c2d99955927a2197b20"
+metafile = true
+
+[[files]]
+file = "mods/yacl.pw.toml"
+hash = "492daa3391b6079b541685db276007b286774bab3b9881505127b7aef6b3f16c"
 metafile = true
 
 [[files]]

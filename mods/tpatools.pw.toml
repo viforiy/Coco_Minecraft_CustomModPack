@@ -1,0 +1,8 @@
+name = "TPATools"
+filename = "tpatools-1.2.1+1.21-1.21.1.jar"
+side = "server"
+
+[download]
+url = "https://cdn.modrinth.com/data/cof1gxfq/versions/GSe2iXe1/tpatools-1.2.1%2B1.21-1.21.1.jar?mr_download_reason=standalone&mr_game_version=1.21.1&mr_loader=fabric"
+hash-format = "sha256"
+hash = "c7aec6a35fff6db0097c85221fedd2b791078100ca6491188539d2978545264e"
