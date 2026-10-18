@@ -99,6 +99,7 @@ for /f "skip=1 tokens=*" %%H in ('certutil -hashfile "!OUT!" SHA256 2^>nul') do 
 if defined HASH echo        %E_SUB% SHA256 !HASH!
 echo.
 echo   %C_WHT%怎么用%C_RST%
+echo     0  运行需要 Java 17 及以上, 没装的话先装一个 JDK
 echo     1  双击 !PWNAME! 打开
 echo     2  选中你的 packwiz 包目录, 也就是 pack.toml 所在的那一层
 echo     3  左边加模组 右边改版本, 改完记得回命令行跑 packwiz refresh

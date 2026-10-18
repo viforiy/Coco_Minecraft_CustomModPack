@@ -1,83 +1,80 @@
-# Coco 整合包 - 工具分支 (tools)
+# Coco 整合包 · 工具脚本
 
-这个分支**只放脚本和工具**, 不放整合包内容。整合包本身在 `main` 分支。
+本分支存放整合包的部署与更新脚本，配合 `main` 分支的 packwiz 包使用。
 
-| 分支 | 内容 | 谁在用 |
-|---|---|---|
-| `main` | `pack.toml`、`index.toml`、`mods/*.pw.toml` 等 packwiz 包内容 | packwiz、packwiz-installer、更新脚本拉取 |
-| `tools` | 一键部署脚本、客户端/服务端更新脚本、PW-GUI 下载器、本说明 | 玩家与服主 |
-| `master` | 历史遗留分支, 已不再维护 | 无 |
+## 背景
 
-## 玩家怎么拿到脚本
+整合包的模组清单以 packwiz 格式维护在 `main` 分支，包含 `pack.toml`、`index.toml` 与
+`mods/*.pw.toml`。模组 jar 不纳入版本库，由 packwiz-installer 依据清单在本地获取。
 
-任选一种:
+客户端与服务端需要在启动前将本地 `mods` 与清单对齐，为此提供一组可挂载到启动流程的脚本。
+脚本与包内容相互独立，集中存放于本分支。
+
+## 内容
+
+| 文件 | 作用 |
+| --- | --- |
+| `一键部署.bat` | 部署入口。释放对应脚本至游戏目录，生成 `mod更新源.cfg` 与启动前命令 |
+| `[客户端]mod更新脚本.bat` | 同步客户端侧模组，由 PCL 启动前调用 |
+| `[服务端]mod更新脚本.bat` | 同步服务端侧模组，由开服脚本调用 |
+| `获取PW-GUI.bat` | 获取 packwiz 图形化编辑器，供维护者编辑元数据 |
+
+## 使用场景
+
+- 初次安装整合包：部署脚本并挂载到 PCL 或开服脚本，此后每次启动自动对齐模组
+- 服务端开服：开服前校验并补齐服务端侧模组，避免与客户端版本不一致
+- 切换元数据仓：在部署时指定其他 packwiz 仓地址，无需修改脚本本体
+
+## 环境要求
+
+- Windows 10 1809 或更高版本，依赖系统自带的 `curl.exe` 与 `tar.exe`
+- 无需预装 git、packwiz 与 Java，脚本自行准备并在缓存目录复用
+- 默认以普通权限运行，仅在启用本地包服务时尝试添加防火墙规则
+
+## 使用
+
+### 获取
 
 ```bash
-# 只拉工具分支
 git clone -b tools https://github.com/viforiy/Coco_Minecraft_CustomModPack.git CocoModPack-tools
 ```
 
-或者用浏览器下载压缩包:
+压缩包下载：<https://github.com/viforiy/Coco_Minecraft_CustomModPack/archive/refs/heads/tools.zip>
 
-```
-https://github.com/viforiy/Coco_Minecraft_CustomModPack/archive/refs/heads/tools.zip
-```
+### 部署
 
-不想装 git 也完全没问题, 上面那个 zip 链接直接点就能下。
+双击 `一键部署.bat`，依次选择平台、填写游戏目录与元数据仓；元数据仓留空即使用本仓库 `main` 分支。
 
-## 装好之后
-
-1. 解压后双击 `一键部署.bat`
-2. 选 `1 客户端` 或 `2 服务端`
-3. 填游戏目录 (PCL 版本文件夹 / 开服目录), 可以直接把文件夹拖进窗口
-4. 元数据仓直接回车, 默认就是本仓库的 `main` 分支
-5. 按它打印的提示, 把 `call` 那一行挂到 PCL 或开服脚本里
-
-之后每次启动/开服都会自动对齐模组。详细说明在 `一键部署.bat` 的开场屏幕里。
-
-## 三个脚本的关系
-
-```
-一键部署.bat                       只跑一次, 放脚本 + 写 mod更新源.cfg
-   |
-   +--> [客户端]mod更新脚本.bat      PCL 启动游戏前调用
-   +--> [服务端]mod更新脚本.bat      开服脚本 java 之前调用
-            |
-            +--> 拉元数据 -> packwiz refresh -> packwiz-installer -> 对齐 mods
-```
-
-单独双击这两个更新脚本会先弹一次知情确认, 确认后本机记住, 不再打扰。
-
-## PW-GUI 怎么处理
-
-[PW-GUI](https://github.com/AmberIsFrozen/PW-GUI) 是第三方做的 packwiz 图形化编辑器,
-用来打开一个包目录、增删模组、改版本号。它是**开发期工具**, 不是玩家需要的东西, 所以:
-
-- **不进 git 仓库**。仓库 `.gitignore` 里有 `*.exe`, 已经自动忽略; 6 MB 以上的二进制
-  进了版本库只会把仓库撑大, 以后每次升级都要多存一份历史副本。
-- **需要时用 `获取PW-GUI.bat` 下载**:
+无人值守方式：
 
 ```bat
-获取PW-GUI.bat                    :: 下到脚本所在目录
-获取PW-GUI.bat "D:\某个整合包"     :: 直接下到那个 packwiz 包目录里
+一键部署.bat 1 "D:\Minecraft\versions\Coco" ["仓库地址" "分支" /y /run]
+一键部署.bat 2 "D:\mc_server"               ["仓库地址" "分支" /y /run]
 ```
 
-脚本带三重兜底: 直连 -> 本机 7890 代理 -> GitHub 加速镜像, 下完会校验体积并打印 SHA256。
+`/y` 直接覆盖同名文件（覆盖前备份），`/run` 部署完成后立即执行一次更新。
 
-- **放哪最顺手**: 放在要编辑的那个包目录旁边, 也就是 `pack.toml` 所在的那一层。
-  PW-GUI 打开时直接选这个目录就行。因为被 `.gitignore` 忽略, 放哪儿都不会误提交。
+### 挂载
 
-- **它只改元数据**, 不下载 jar。改完记得回命令行跑一次:
+| 平台 | 位置 | 命令 |
+| --- | --- | --- |
+| 客户端 | PCL → 版本设置 → 设置 → 高级选项 → 启动前执行指令 | `call "{verpath}\[客户端]mod更新脚本.bat" "$INST_JAVA"` |
+| 服务端 | 开服脚本 `java` 行之前 | `call "[服务端]mod更新脚本.bat"`<br>`if errorlevel 1 exit /b 1` |
 
-```bash
-packwiz refresh
-```
+### 配置
 
-然后 `git status` 确认只动了该动的 `.pw.toml` / `index.toml`, 再提交推送。
+部署生成的 `mod更新源.cfg` 位于游戏目录，用于覆盖脚本内置参数：
 
-## 备注
+| 键 | 说明 |
+| --- | --- |
+| `PACK_GIT_URL` | 模组元数据仓地址 |
+| `PACK_GIT_BRANCH` | 分支名，默认 `main` |
+| `META_SOURCE` | 元数据同步方式：`auto` / `git` / `zip` |
+| `PACK_SOURCE` | 包来源：`file`（默认）/ `serve` / `remote` |
+| `PROXY_PORT` | 系统代理端口，默认 `7890` |
 
-- `main` 分支里已经不再存放脚本, 保持"纯 packwiz 包"的结构:
-  `packwiz`、`packwiz serve`、`packwiz-installer` 都要求 `pack.toml` 在仓库根目录。
-- `.packwizignore` 里另外排除了 `*.bat` `*.md` `*.exe`, 就算谁把工具放进了 `main`,
-  packwiz 也不会把它们算进包索引。
+## 说明
+
+- 更新脚本首次单独运行时请求一次确认并写入标记，此后不再提示；未经部署而直接运行前，请确认目标目录正确。
+- `mods` 目录由脚本依据清单维护，手动放入的 jar 会在下次同步时被覆盖或清理。
+- PW-GUI 为第三方工具，运行需要 Java 17 及以上；二进制文件不纳入版本库，通过 `获取PW-GUI.bat` 获取。
