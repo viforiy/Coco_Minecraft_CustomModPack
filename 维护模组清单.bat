@@ -1,6 +1,6 @@
 @echo off
 rem ============================================================================
-rem  Coco 整合包 - 新增模组同步工具 (启动器)
+rem  Coco 整合包 - 模组清单同步工具 (启动器)
 rem
 rem  用法
 rem    双击                          交互式, 自动找同级的 Coco_Minecraft_CustomModPack
@@ -21,7 +21,7 @@ if not exist "%PS1%" (
     exit /b 1
 )
 
-title Coco 整合包 - 新增模组同步工具
+title Coco 整合包 - 模组清单同步工具
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%" %*
 set "RC=%errorlevel%"
 

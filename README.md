@@ -93,10 +93,11 @@ git clone -b tools https://github.com/viforiy/Coco_Minecraft_CustomModPack.git C
 
 执行内容：
 
-1. 扫描 `mods/*.pw.toml`，与 `模组列表介绍.md` 中已记录的 slug 比对，列出尚未收录的模组
-2. 通过 Modrinth API 取 `client_side` / `server_side`，给出 `client` / `server` / `both` 建议，确认后写回 `.pw.toml`
-3. 通过版本接口取 required 依赖，自动填入「前置」列
-4. 交互录入中文名、分类、功能描述，插入对应分类的表格并重算该节计数
-5. 若改动了 `.pw.toml`，自动执行 `packwiz refresh`
+1. 清理：文档中存在但 `mods/` 已删除的条目，确认后移除并重算计数
+2. 同步：已有条目的 jar 文件名与安装端按元数据刷新（模组升级后版本号会变）
+3. 补录：列出尚未收录的模组，通过 Modrinth 取 `client_side` / `server_side` 给出 side 建议并写回 `.pw.toml`，required 依赖自动填入「前置」列，交互录入中文名、分类与功能后插入表格
+4. 若改动了 `.pw.toml`，自动执行 `packwiz refresh`
+
+`-NoPrune` 可跳过第 1 步的删除动作。
 
 依赖 Modrinth 公开 API，需要能访问 `api.modrinth.com`；直连失败时会尝试本机 `7890` 代理，也可用 `-Proxy` 显式指定。

@@ -36,7 +36,9 @@ param(
     [string]$Proxy,
     [switch]$DryRun,
     [switch]$NoSide,
-    [switch]$All
+    [switch]$All,
+
+    [switch]$NoPrune
 )
 
 $ErrorActionPreference = 'Stop'
@@ -200,22 +202,22 @@ function Save-DocWithRows {
     }
 
     # 重算每节计数
-    $arr = $work.ToArray()
-    $secs = Read-DocSections $arr
-    for ($i = $secs.Count - 1; $i -ge 0; $i--) {
-        $sec = $secs[$i]
-        $n = if ($sec.RowStart -ge 0) { $sec.RowEnd - $sec.RowStart + 1 } else { 0 }
-        $head = $arr[$sec.Heading]
-        if ($n -gt 0) {
-            $arr[$sec.Heading] = '### ' + $sec.Title + '（' + $n + '）'
-        } elseif ($sec.HadCount) {
-            $arr[$sec.Heading] = '### ' + $sec.Title + '（0）'
-        } else {
-            $arr[$sec.Heading] = '### ' + $sec.Title
-        }
-    }
+    $arr = Repair-DocCounts $work.ToArray() (Read-DocSections $work.ToArray())
 
     if (-not $DryRun) { [IO.File]::WriteAllText($Path, ($arr -join "`r`n"), $Utf8NoBom) }
+    return $arr
+}
+
+function Repair-DocCounts {
+    param([string[]]$Lines, $Sections)
+    $arr = [string[]]$Lines.Clone()
+    for ($i = $Sections.Count - 1; $i -ge 0; $i--) {
+        $sec = $Sections[$i]
+        $n = if ($sec.RowStart -ge 0) { $sec.RowEnd - $sec.RowStart + 1 } else { 0 }
+        if ($n -gt 0) { $arr[$sec.Heading] = '### ' + $sec.Title + '（' + $n + '）' }
+        elseif ($sec.HadCount) { $arr[$sec.Heading] = '### ' + $sec.Title + '（0）' }
+        else { $arr[$sec.Heading] = '### ' + $sec.Title }
+    }
     return $arr
 }
 
@@ -256,9 +258,9 @@ function Get-RequiredDeps {
 # ---------------------------------------------------------------------------
 Say ''
 Say '=========================================================='
-Say '  Coco 整合包 · 新增模组同步工具'
+Say '  Coco 整合包 · 模组清单同步工具'
 Say '=========================================================='
-Say '  作用: 找出尚未写入清单的模组, 校正 side, 交互补全中文名与分类'
+Say '  作用: 同步清单与 mods/ 元数据, 校正 side, 补录新条目, 清理失效条目'
 Say '  只读模式加 -DryRun; 跳过 side 校正加 -NoSide'
 Say ''
 
@@ -290,8 +292,79 @@ foreach ($l in $docLines) {
 $docKeys = $docKeys | Sort-Object -Unique
 Info ("元数据 {0} 个, 文档记录 {1} 个" -f $mods.Count, $docKeys.Count)
 
-# 3) 差异
-$newMods = @($mods | Where-Object { $docKeys -notcontains $_.Key })
+# 2.5) 文档里存在、但元数据已没有的条目
+$modKeys = @($mods | ForEach-Object { $_.Key })
+$stale = @()
+foreach ($l in $docLines) {
+    if ($l -notmatch '^\|\s*\*\*') { continue }
+    foreach ($mm in [regex]::Matches($l, '[`]([A-Za-z0-9][A-Za-z0-9_\-\.]*)[`]')) {
+        $k = $mm.Groups[1].Value
+        if ($modKeys -notcontains $k -and $stale -notcontains $k) { $stale += $k }
+    }
+}
+if ($stale.Count -gt 0) {
+    Head "文档里有 $($stale.Count) 个条目在 mods/ 中已不存在"
+    foreach ($k in $stale) { Say "  - $k" }
+    $doPrune = -not $NoPrune
+    if ($doPrune) {
+        $ans = Read-Host '  删除这些行吗 (packwiz remove 之后通常选 Y) [Y/n]'
+        if ($ans -and $ans -notmatch '^[Yy]') { $doPrune = $false }
+    }
+    if ($doPrune) {
+        $keep = New-Object System.Collections.Generic.List[string]
+        foreach ($l in $docLines) {
+            $drop = $false
+            if ($l -match '^\|\s*\*\*') {
+                foreach ($mm in [regex]::Matches($l, '[`]([A-Za-z0-9][A-Za-z0-9_\-\.]*)[`]')) {
+                    if ($stale -contains $mm.Groups[1].Value) { $drop = $true }
+                }
+            }
+            if (-not $drop) { $keep.Add($l) }
+        }
+        $docLines = $keep.ToArray()
+        $sections = Read-DocSections $docLines
+        if (-not $DryRun) {
+            $fixed = Repair-DocCounts $docLines $sections
+            [IO.File]::WriteAllText($DocPath, ($fixed -join "`r`n"), $Utf8NoBom)
+            $docLines = $fixed
+            Ok "已删除 $($stale.Count) 个失效条目并重算计数"
+        } else { Warn 'DryRun, 未删除' }
+    } else { Info '保留这些行 (可加 -NoPrune 静默跳过)' }
+}
+
+# 2.6) 同步已有行的 jar 文件名与端 (模组升级后版本号会变)
+$modMap = @{}
+foreach ($m in $mods) { $modMap[$m.Key] = $m }
+$synced = 0
+$newLines = New-Object System.Collections.Generic.List[string]
+foreach ($l in $docLines) {
+    if ($l -notmatch '^\|\s*\*\*') { $newLines.Add($l); continue }
+    $cells = ($l -split '\|'); $cells = $cells[1..($cells.Count - 2)] | ForEach-Object { $_.Trim() }
+    if ($cells.Count -lt 6) { $newLines.Add($l); continue }
+    $slugCell = $cells[1]
+    if ($slugCell -notmatch '[`]([A-Za-z0-9][A-Za-z0-9_\-\.]*)[`]') { $newLines.Add($l); continue }
+    $key = $Matches[1]
+    if (-not $modMap.ContainsKey($key)) { $newLines.Add($l); continue }
+    $m = $modMap[$key]
+    $isDisabled = ($cells[2] -match '^disabled/' -or $cells[5] -match '已禁用')
+    $newJar = if ($isDisabled) { 'disabled/' + $m.Filename + '.disabled' } else { $m.Filename }
+    $newSide = Get-SideText $m.Side $isDisabled
+    if ($cells[2] -ne $newJar -or $cells[5] -ne $newSide) {
+        $newLines.Add(('| {0} | {1} | {2} | {3} | {4} | {5} |' -f $cells[0], $cells[1], $newJar, $cells[3], $cells[4], $newSide))
+        $synced++
+    } else { $newLines.Add($l) }
+}
+if ($synced -gt 0) {
+    Info "同步 $synced 行的 jar 文件名与安装端 (按元数据)"
+    $docLines = $newLines.ToArray()
+    if (-not $DryRun) {
+        $fixed = Repair-DocCounts $docLines (Read-DocSections $docLines)
+        [IO.File]::WriteAllText($DocPath, ($fixed -join "`r`n"), $Utf8NoBom)
+        $docLines = $fixed
+    }
+} else { Info '已有条目的 jar 文件名与端均与元数据一致' }
+
+# 3) 差异$newMods = @($mods | Where-Object { $docKeys -notcontains $_.Key })
 if ($newMods.Count -eq 0) {
     Ok '没有发现未记录的模组, 无需操作'
     exit 0
