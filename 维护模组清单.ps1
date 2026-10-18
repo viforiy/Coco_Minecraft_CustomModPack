@@ -364,7 +364,8 @@ if ($synced -gt 0) {
     }
 } else { Info '已有条目的 jar 文件名与端均与元数据一致' }
 
-# 3) 差异$newMods = @($mods | Where-Object { $docKeys -notcontains $_.Key })
+# 3) 差异
+$newMods = @($mods | Where-Object { $docKeys -notcontains $_.Key })
 if ($newMods.Count -eq 0) {
     Ok '没有发现未记录的模组, 无需操作'
     exit 0
@@ -377,6 +378,10 @@ foreach ($m in $newMods) {
     Say ("  {0,2}. {1,-32} side={2,-8} {3}" -f $i, $m.Key, $s, $m.Filename)
 }
 Say ''
+if ($DryRun) {
+    Info 'DryRun 结束, 未进入交互, 也未写入任何文件'
+    exit 0
+}
 if (-not $All) {
     $go = Read-Host '  现在逐个处理吗 [Y/n]'
     if ($go -and $go -notmatch '^[Yy]') { Info '已取消'; exit 0 }
