@@ -444,9 +444,11 @@ foreach ($m in $newMods) {
 
     # 分类
     Say ''
-    Say '  选择分类:'
+    Say '  选择分类 (顺序取自清单文档, 括号内为现有条目数):'
     for ($k = 0; $k -lt $sections.Count; $k++) {
-        Say ("    {0,2}. {1}" -f ($k + 1), $sections[$k].Title)
+        $sc = $sections[$k]
+        $cnt = if ($sc.RowStart -ge 0) { $sc.RowEnd - $sc.RowStart + 1 } else { 0 }
+        Say ("    {0,2}. {1} ({2})" -f ($k + 1), $sc.Title, $cnt)
     }
     Say ("    {0,2}. 新建分类" -f ($sections.Count + 1))
     $pick = Read-Host '  序号'
