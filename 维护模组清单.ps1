@@ -276,8 +276,15 @@ while (-not $PackDir -or -not (Test-Path (Join-Path $PackDir 'pack.toml'))) {
 $PackDir = (Resolve-Path $PackDir).Path
 if (-not $DocPath) { $DocPath = Join-Path $PackDir '模组列表介绍.md' }
 if (-not (Test-Path $DocPath)) { Fail "找不到清单文档 $DocPath"; exit 1 }
-Info "包目录 $PackDir"
-Info "清单   $DocPath"
+Info "脚本位置 $PSScriptRoot"
+Info "包目录   $PackDir"
+Info "清单     $DocPath"
+if (Test-Path (Join-Path $PSScriptRoot 'pack.toml')) {
+    Warn '这份工具被放进了包目录本身, 建议改从 dev 分支的工作区运行'
+}
+if ($PSScriptRoot -eq $PackDir) {
+    Warn '脚本目录与包目录相同, 工具不属于 main 分支, 请从 Desktop\CocoModPack-dev 运行'
+}
 if ($DryRun) { Warn 'DryRun 模式, 不会写入任何文件' }
 
 # 2) 读元数据与文档
