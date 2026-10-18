@@ -224,6 +224,25 @@ if exist "!GAME_DIR!\pack.toml" (
     echo        %E_SUB% 确实要在本目录运行, 先把 pack.toml 挪走
     exit /b 1
 )
+rem 单独裸跑时先拦一道: 由部署器放的 ack 文件 或 传入 java 路径 或 设了 COCO_NO_PROMPT 时跳过
+set "ACK_FILE=%CACHE_ROOT%\ack-client.txt"
+if "%~1"=="" if not defined COCO_NO_PROMPT if not exist "!ACK_FILE!" (
+    echo.
+    echo %C_BIG%  注意 这是 客户端 Mod 更新脚本本体  %C_RST%
+    echo   它会按当前目录的 mod更新源.cfg 拉取元数据, 并改写本目录的 mods
+    echo   正常流程是用仓库里的 一键部署.bat 把它放到正确位置并配好源
+    echo   如果你只是想装上用, 请退出并运行 一键部署.bat
+    echo   确认继续的话, 之后本机不再提示
+    echo.
+    call :confirm "我确认知道自己在做什么, 继续"
+    if not "!errorlevel!"=="0" (
+        echo   已取消, 没有修改任何文件
+        set "FINAL_RC=1"
+        goto :finish
+    )
+    > "!ACK_FILE!" echo ack manual !TS!
+)
+
 call :step "定位 Java 运行环境"
 
 call :find_java
@@ -598,6 +617,13 @@ call :hint "       packwiz-installer.jar https://github.com/packwiz/packwiz-inst
 call :hint "       具体哪个 mod 失败, 看控制台 Downloaded 断在哪里, 与日志 !LOG_FILE!"
 goto :eof
 
+rem 询问 y/n, 返回 0 表示 y
+:confirm
+set "_ans="
+set /p "_ans=%~1 [y/N] : "
+if /i "!_ans!"=="y" exit /b 0
+if /i "!_ans!"=="yes" exit /b 0
+exit /b 1
 :step
 set /a STEP+=1
 echo.

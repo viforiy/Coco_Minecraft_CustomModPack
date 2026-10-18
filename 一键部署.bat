@@ -84,15 +84,46 @@ title Coco 整合包 - Mod 更新脚本 一键部署
 
 echo.
 echo %C_BIG%  Coco 整合包 - Mod 更新脚本 一键部署  %C_RST%
-echo %C_DIM%  ------------------------------------------------------------------%C_RST%
-echo   本工具做四件事
-echo     1  选客户端还是服务端
-echo     2  填游戏目录, 直接把文件夹拖进窗口也行
-echo     3  填模组元数据仓地址, 回车就用本仓库
-echo     4  把更新脚本和配置放好, 并给出发动机命令
+echo %C_DIM%  ==================================================================%C_RST%
 echo.
-echo %C_DIM%  随时可以关掉窗口, 不会改动任何已有文件%C_RST%
+echo %C_WHT%  背景%C_RST%
+echo     这个仓库是 Coco 的 Minecraft 整合包模组清单, 用 packwiz 管理, 用 git 托管
+echo     pack.toml 与 mods 下面的 .pw.toml 只是元数据, jar 不在这里
+echo     真正的模组由 packwiz-installer 按清单从 Modrinth 与 CurseForge 下载
+echo.
+echo %C_WHT%  这个脚本做什么%C_RST%
+echo     把 每次启动前自动对齐模组 这件事装进你的游戏目录
+echo     客户端 装到 PCL 版本文件夹, 启动游戏前自动更新 mods
+echo     服务端 装到开服目录, 开服前自动更新 mods
+echo     装好后只多一个脚本和一个 cfg, 不动存档, 不动配置, 不动整合包本体
+echo.
+echo %C_WHT%  调用流程%C_RST%
+echo     %C_DIM%第 1 步  一键部署.bat  放好脚本 写好 mod更新源.cfg  只跑一次%C_RST%
+echo     %C_DIM%第 2 步  PCL 启动前调用 [客户端]mod更新脚本.bat%C_RST%
+echo     %C_DIM%第 3 步  开服脚本 java 之前调用 [服务端]mod更新脚本.bat%C_RST%
+echo     %C_DIM%第 4 步  更新脚本内部 拉元数据 刷新索引 差异同步 mods%C_RST%
+echo.
+echo %C_WHT%  装完要做什么%C_RST%
+echo     客户端 把最后打印的 call 行粘到 PCL 的启动前执行指令
+echo     服务端 把最后打印的两行 call 粘到开服脚本 java 那一行之前
+echo     就这两件事, 之后每次启动都会自动更新
+echo.
+echo %C_WHT%  不需要做什么 也别做%C_RST%
+echo     不要手动往 mods 里塞 jar, 下次同步会按清单把它清掉或覆盖
+echo     不要把这两个更新脚本复制到元数据仓目录里运行
+echo     不要改脚本本体, 要换源改 mod更新源.cfg 就行
+echo     不需要自己装 packwiz 或 git, 脚本会自己准备, 没有 git 也能更新
+echo     不要在这里按 Ctrl+C 强退, 中途退出不会损坏 mods, 重跑会接着来
+echo.
+echo %C_DIM%  ==================================================================%C_RST%
 if defined NONINTERACTIVE echo %C_DIM%  当前为参数模式, 不会提问%C_RST%
+if defined NONINTERACTIVE goto :intro_done
+
+set "_go="
+set /p "_go=看明白了就按回车开始, 输入 n 退出 : "
+if /i "!_go!"=="n" goto :bye
+
+:intro_done
 
 rem ===========================================================================
 rem  第一步 选择平台
@@ -304,7 +335,7 @@ if not exist "!DST!" (
     %E_ERR% 复制失败, 检查目录权限或是否被杀软拦截
     goto :bye
 )
-"%E_OK% 已放置 !DST!
+%E_OK% 已放置 !DST!
 :after_copy
 
 rem ===========================================================================
@@ -343,20 +374,28 @@ if exist "!CFG!" (
 >>"!CFG!" echo #PROXY_PORT=7890
 >>"!CFG!" echo #BACKUP_MODS=0
 >>"!CFG!" echo #FAIL_HARD=0
-"%E_OK% 已写入 !CFG!
+%E_OK% 已写入 !CFG!
 :after_cfg
 
 if /i "!SIDE_CHECK!"=="client" (
     set "CMDFILE=!TARGET!\PCL启动前命令.txt"
     > "!CMDFILE!" echo call "{verpath}\!SCRIPT_NAME!" "$INST_JAVA"
-"%E_OK% 已写入 !CMDFILE!
+%E_OK% 已写入 !CMDFILE!
 ) else (
     set "CMDFILE=!TARGET!\开服前命令.txt"
     > "!CMDFILE!" echo call "!SCRIPT_NAME!"
     >>"!CMDFILE!" echo if errorlevel 1 exit /b 1
-"%E_OK% 已写入 !CMDFILE!
+%E_OK% 已写入 !CMDFILE!
 )
 
+rem 记一笔知情标记, 之后更新脚本单独跑时不再拦人
+set "ACK_DIR=%LOCALAPPDATA%\CocoPackwiz"
+if defined COCO_CACHE_ROOT set "ACK_DIR=%COCO_CACHE_ROOT%"
+set "ACKFILE=!ACK_DIR!\ack-!SIDE_CHECK!.txt"
+if not exist "!ACK_DIR!" mkdir "!ACK_DIR!" >nul 2>&1
+> "!ACKFILE!" echo ack by 一键部署 !TS!
+>>"!ACKFILE!" echo target=!TARGET!
+>>"!ACKFILE!" echo repo=!REPO!
 rem ===========================================================================
 rem  收尾
 rem ===========================================================================
@@ -388,6 +427,11 @@ echo.
 echo   %C_WHT%日志与缓存%C_RST%
 echo     %LOCALAPPDATA%\CocoPackwiz
 echo     %C_DIM%日志在 logs, 元数据仓缓存在 meta, 失败会写 更新失败报告-时间.txt%C_RST%
+echo.
+echo   %C_WHT%别做这些%C_RST%
+echo     %C_DIM%1 手动往 mods 塞 jar, 下次同步会按清单清掉或覆盖%C_RST%
+echo     %C_DIM%2 把更新脚本复制到元数据仓目录里跑, 那会把 mod 装进仓库%C_RST%
+echo     %C_DIM%3 改更新脚本本体, 要换源改 !CFG_NAME! 就行%C_RST%
 echo.
 
 if "!AUTO_RUN!"=="1" goto :do_run
