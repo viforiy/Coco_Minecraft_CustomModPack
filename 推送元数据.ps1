@@ -260,23 +260,6 @@ if ($skipCommit) {
 }
 
 # 6) 推送
-# 先只读探测远端, 落后或分叉提前告知, 避免用户等到推送被拒才看到原因
-$fetchTry = Invoke-Git @('fetch',$remoteName,'--quiet') -AllowFail
-if ($fetchTry.Code -eq 0) {
-    $behindRes = Invoke-Git @('rev-list','--count',"HEAD..$remoteName/$branch") -AllowFail
-    $aheadRes  = Invoke-Git @('rev-list','--count',"$remoteName/$branch..HEAD") -AllowFail
-    if ($behindRes.Code -eq 0 -and $aheadRes.Code -eq 0) {
-        $behind = [int]$behindRes.Out.Trim()
-        $ahead  = [int]$aheadRes.Out.Trim()
-        if ($behind -gt 0) {
-            Warn "本地落后 $remoteName/$branch $behind 个提交, 领先 $ahead 个"
-            Say  '  远端有你没有的提交, 直接推送会被拒绝'
-            Say  "  先同步再推送:  git -C ""$PackDir"" pull --rebase $remoteName $branch"
-        } else {
-            Info "本地领先 $remoteName/$branch $ahead 个提交, 可快进推送"
-        }
-    }
-}Head '推送'
 $proxy = 'http://127.0.0.1:7890'
 $remoteName = $repo.Remote
 if (-not $remoteName) {
@@ -284,6 +267,50 @@ if (-not $remoteName) {
     Say "  先添加远端再重试:  git -C ""$PackDir"" remote add origin <仓库地址>"
     exit 1
 }
+
+# 6.1) 推送前同步: 先 fetch, 落后则自动 rebase
+$fetchTry = Invoke-Git @('fetch',$remoteName,'--quiet') -AllowFail
+if ($fetchTry.Code -ne 0) {
+    Warn '拉取远端状态失败, 跳过同步步骤'
+} else {
+    $behindRes = Invoke-Git @('rev-list','--count',"HEAD..$remoteName/$branch") -AllowFail
+    $aheadRes  = Invoke-Git @('rev-list','--count',"$remoteName/$branch..HEAD") -AllowFail
+    $behind = if ($behindRes.Code -eq 0) { [int]$behindRes.Out.Trim() } else { 0 }
+    $ahead  = if ($aheadRes.Code -eq 0)  { [int]$aheadRes.Out.Trim() }  else { 0 }
+
+    if ($behind -gt 0 -and -not $Force) {
+        Warn "本地落后 $remoteName/$branch $behind 个提交, 领先 $ahead 个, 先同步"
+        $dirty = @((Invoke-Git @('status','--porcelain') -AllowFail).Out -split "`n" | Where-Object { $_.Trim() -ne '' }).Count
+        if ($dirty -gt 0) {
+            Warn "工作区还有 $dirty 个未提交改动, 跳过自动 rebase"
+            Say  "  手工处理:  git -C ""$PackDir"" stash && git -C ""$PackDir"" pull --rebase $remoteName $branch"
+        } else {
+            Info "rebase 到 $remoteName/$branch"
+            $rb = Invoke-Git @('rebase',"$remoteName/$branch") -AllowFail
+            if ($rb.Code -ne 0) {
+                [void](Invoke-Git @('rebase','--abort') -AllowFail)
+                Fail 'rebase 出现冲突, 已回滚到 rebase 前状态'
+                Say  "  手工处理:  git -C ""$PackDir"" pull --rebase $remoteName $branch"
+                exit 1
+            }
+            Ok '已 rebase 到远端最新'
+            $ahead = [int]((Invoke-Git @('rev-list','--count',"$remoteName/$branch..HEAD") -AllowFail).Out.Trim())
+            if ($ahead -eq 0) {
+                Warn 'rebase 后本地没有独立提交了, 没有需要推送的内容'
+                Say  '  若提交与远端内容相同、只想改提交信息, rebase 会把它视为已应用而丢弃'
+                Say  "  这种情况改用:  推送元数据.bat -Force"
+                exit 0
+            }
+            Info "本地领先 $remoteName/$branch $ahead 个提交, 可快进推送"
+        }
+    } elseif ($behind -gt 0) {
+        Warn "本地落后 $remoteName/$branch $behind 个提交; 已指定 -Force, 跳过 rebase"
+    } else {
+        Info "本地领先 $remoteName/$branch $ahead 个提交, 可快进推送"
+    }
+}
+
+Head '推送'
 $pushRef = "HEAD:$branch"
 $pushExtra = @()
 if ($Force) {
