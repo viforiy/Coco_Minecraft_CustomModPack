@@ -34,6 +34,10 @@
 
 .PARAMETER NoRemove
     不删除「用户删行」对应的元数据, 只报告
+
+.PARAMETER Check
+    只做体检: 检查 side 偏差、前置缺失、文档与元数据不一致
+    不做任何改动; 有异常时退出码 2
 #>
 [CmdletBinding()]
 param(
@@ -47,7 +51,10 @@ param(
     [switch]$NoPrune,
 
     # 跳过删除元数据(只报告用户删行)
-    [switch]$NoRemove
+    [switch]$NoRemove,
+
+    # 只做体检: 检查 side 偏差、前置缺失、文档与元数据不一致, 不做任何改动
+    [switch]$Check
 )
 
 $ErrorActionPreference = 'Stop'
@@ -116,6 +123,112 @@ $docLines = [IO.File]::ReadAllText($DocPath, [Text.Encoding]::UTF8) -split "`r?`
 $sections = @(Read-DocSections $docLines)
 $docKeys = @(Get-DocSlugs -DocPath $DocPath)
 Info ("元数据 {0} 个, 文档记录 {1} 个" -f $mods.Count, $docKeys.Count)
+
+# 2.3) 体检模式: 只检查不修改, 结束后退出
+if ($Check) {
+    $issues = New-Object System.Collections.Generic.List[string]
+
+    # 检查一: side 与 Modrinth 官方标注是否一致(批量查询, 不逐个请求)
+    $mrIds = @($mods | Where-Object { $_.MrId } | ForEach-Object { $_.MrId })
+    $projMap = Get-MrProjectsBatch -Ids $mrIds
+    $sideBad = 0
+    foreach ($m in $mods) {
+        if (-not $m.MrId) { continue }
+        $proj = $projMap[$m.MrId]
+        if (-not $proj) { continue }
+        $suggest = Get-SuggestedSide $proj
+        if ($suggest -and $suggest -ne $m.Side) {
+            $sideBad++
+            # 只有"当前标为客户端、而官方标注服务端必需"才会真的让服务端缺模组
+            if ($m.Side -eq 'client' -and $proj.server_side -eq 'required') {
+                $issues.Add(("side 风险  {0}  当前=client, 但官方标注服务端必需" -f $m.Key))
+            }
+        }
+    }
+    Info ("side 检查   共 {0} 个, 与官方标注不同 {1} 个(多数为标注保守, 不计异常)" -f @($mods | Where-Object { $_.MrId }).Count, $sideBad)
+
+    # 检查二: 文档与元数据是否一一对应
+    $modKeysNow = @($mods | ForEach-Object { $_.Key })
+    $docOnly = @($docKeys | Where-Object { $modKeysNow -notcontains $_ })
+    $modOnly = @($modKeysNow | Where-Object { $docKeys -notcontains $_ })
+    foreach ($k in $modOnly) { $issues.Add("文档缺少行  $k (元数据存在, 文档未记录)") }
+    foreach ($k in $docOnly) { $issues.Add("文档多余行  $k (元数据缺失)") }
+    Info ("文档对应   元数据 {0} 个, 文档 {1} 条, 差异 {2} 处" -f $modKeysNow.Count, $docKeys.Count, ($modOnly.Count + $docOnly.Count))
+
+    # 检查三: 同一项目对应多个元数据文件
+    $dupIds = @($mods | Where-Object { $_.MrId } | Group-Object MrId | Where-Object { $_.Count -gt 1 })
+    foreach ($g in $dupIds) {
+        $issues.Add(("重复项目   {0} 对应 {1} 个元数据: {2}" -f $g.Name, $g.Count, (($g.Group | ForEach-Object { $_.Key }) -join ', ')))
+    }
+    Info ("重复检查   同一项目多份元数据 {0} 组" -f $dupIds.Count)
+
+    # 检查四: 前置列写到的名称能否对应到包内模组
+    $nameIndex = @{}
+    foreach ($m in $mods) {
+        $nameIndex[$m.Key.ToLower()] = $m.Key
+        if ($m.Name) { $nameIndex[$m.Name.ToLower()] = $m.Key }
+    }
+    $aliasTable = @(Read-AliasTable $PackDir)
+    foreach ($a in $aliasTable) { if (-not $nameIndex.ContainsKey($a.Alias.ToLower())) { $nameIndex[$a.Alias.ToLower()] = $a.Slug } }
+
+    $depBad = 0
+    $nameKeys = @($nameIndex.Keys)
+    foreach ($line in $docLines) {
+        if ($line -notmatch '^\|') { continue }
+        # 跳过表头与分隔行
+        if ($line -match '^\|\s*(名称|slug|---)') { continue }
+        $cells0 = ($line -split '\|')
+        if ($cells0.Count -lt 6) { continue }
+        $cells0 = $cells0[1..($cells0.Count - 2)] | ForEach-Object { $_.Trim() }
+        if ($cells0.Count -lt 4) { continue }
+        $depCell = $cells0[3]
+        if (-not $depCell -or $depCell -eq '—') { continue }
+        $slugCell = ''
+        if ($cells0[1] -match '`([^`]+)`') { $slugCell = $Matches[1] }
+
+        foreach ($token in ($depCell -split '[、,，/＋+]')) {
+            $tk = ($token -replace '<[^>]*>', '').Trim()
+            if (-not $tk -or $tk -eq '—' -or $tk -eq '---') { continue }
+            # 内置/外部依赖不在 mods 目录, 视为已知例外
+            if ($tk -match '内置|外部') { continue }
+            # 去掉「前置库」「前置」「配置库」这类后缀再比对
+            $tkNorm = ($tk -replace '(前置库|前置|配置格式库|配置库|核心库|内嵌浏览器框架|物品管理器)$', '').Trim()
+            $hit = $nameIndex[$tk.ToLower()]
+            if (-not $hit) { $hit = $nameIndex[$tkNorm.ToLower()] }
+            if (-not $hit) {
+                # 归一化: 去空格与下划线后再比一次
+                $flat = ($tkNorm -replace '[\s_\-'']', '').ToLower()
+                foreach ($k in $nameKeys) {
+                    $kf = ($k -replace '[\s_\-'']', '')
+                    if ($kf.Length -ge 4 -and $flat.Contains($kf)) { $hit = $nameIndex[$k]; break }
+                }
+            }
+            if (-not $hit -and $tkNorm.Length -ge 2) {
+                # 包含匹配: 前置项里含包内名称, 或包内名称含前置项
+                $lower = $tkNorm.ToLower()
+                foreach ($k in $nameKeys) {
+                    if ($k.Length -ge 3 -and ($lower.Contains($k) -or $k.Contains($lower))) { $hit = $nameIndex[$k]; break }
+                }
+            }
+            if (-not $hit) {
+                $depBad++
+                $issues.Add(("前置无法解析  {0} 的前置项「{1}」在包内找不到对应模组" -f $slugCell, $tk))
+            }
+        }
+    }
+    Info ("前置检查   无法解析的前置项 {0} 处" -f $depBad)
+
+    Say ''
+    if ($issues.Count -eq 0) {
+        Ok '无异常'
+        exit 0
+    }
+    Head ("发现 {0} 处异常" -f $issues.Count)
+    $issues | ForEach-Object { Say "  - $_" }
+    Say ''
+    Warn '体检只报告, 不做修改; 修正后重新运行'
+    exit 2
+}
 
 # 2.4) 顺手刷新别名表: 覆盖手工改过文档但未运行别名工具的情形
 #      后续若有补录写入, 保存后会再刷新一次

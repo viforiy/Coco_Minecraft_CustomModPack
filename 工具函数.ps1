@@ -1007,3 +1007,30 @@ function Get-RequiredDepProjects {
     }
     return $out.ToArray()
 }
+
+function Get-MrProjectsBatch {
+    <#
+        批量查询项目信息(每批 50 个 id), 返回 projectId -> 项目对象 的哈希表
+        仅用于体检这类需要遍历全部模组的场景, 避免逐个请求
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][string[]]$Ids,
+        [int]$Batch = 50
+    )
+
+    $map = @{}
+    if (-not $Ids -or $Ids.Count -eq 0) { return $map }
+    $uniq = @($Ids | Where-Object { $_ } | Sort-Object -Unique)
+
+    for ($i = 0; $i -lt $uniq.Count; $i += $Batch) {
+        $chunk = @($uniq[$i..([Math]::Min($i + $Batch - 1, $uniq.Count - 1))])
+        $json = '[' + (($chunk | ForEach-Object { '"' + $_ + '"' }) -join ',') + ']'
+        $url = 'https://api.modrinth.com/v2/projects?ids=' + [uri]::EscapeDataString($json)
+        try {
+            $res = @(Invoke-Api $url)
+            foreach ($p1 in $res) { if ($p1 -and $p1.id) { $map[[string]$p1.id] = $p1 } }
+        } catch { }
+    }
+    return $map
+}
