@@ -828,3 +828,47 @@ function Invoke-MetadataRemove {
     Ok "已删除 $removed 个模组的元数据"
     return $result
 }
+
+function Get-MrSearch {
+    <#
+        按关键词搜索 Modrinth, 并按包设定的加载器与游戏版本过滤
+
+        过滤使用 facets: 外层数组为 AND, 内层数组为 OR
+        例如 [["categories:neoforge"],["versions:1.21.1"]]
+
+        返回 search 响应对象(hits / total_hits), 失败返回 $null
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$Query,
+        [string[]]$Loaders,
+        [string[]]$GameVersions,
+        [int]$Limit = 10
+    )
+
+    $parts = @()
+    if ($Loaders -and $Loaders.Count -gt 0) {
+        $parts += '[' + (($Loaders | ForEach-Object { '"categories:' + $_ + '"' }) -join ',') + ']'
+    }
+    if ($GameVersions -and $GameVersions.Count -gt 0) {
+        $parts += '[' + (($GameVersions | ForEach-Object { '"versions:' + $_ + '"' }) -join ',') + ']'
+    }
+    $facets = '[' + ($parts -join ',') + ']'
+
+    $url = 'https://api.modrinth.com/v2/search?limit=' + $Limit +
+           '&index=relevance' +
+           '&query=' + [uri]::EscapeDataString($Query)
+    if ($parts.Count -gt 0) { $url += '&facets=' + [uri]::EscapeDataString($facets) }
+
+    try { return (Invoke-Api $url) } catch { return $null }
+}
+
+function Format-Count {
+    <#
+        下载量等数字加千分位
+    #>
+    [CmdletBinding()]
+    param($Value)
+    if ($null -eq $Value) { return '0' }
+    return ('{0:N0}' -f [int64]$Value)
+}

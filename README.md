@@ -80,12 +80,15 @@ git clone -b dev https://github.com/viforiy/Coco_Minecraft_CustomModPack.git Coc
 添加模组.bat https://modrinth.com/mod/jade
 添加模组.bat jade
 添加模组.bat 苹果皮                  :: 中文名先查别名表
+添加模组.bat -Search sodium          :: 按关键词搜索候选, 选序号录入
 添加模组.bat jade -DryRun          :: 只解析与检查
 ```
 
 流程：解析输入 → 校验项目 → 检查是否已在包内 → 按 `pack.toml` 的加载器与游戏版本筛选版本 → 调 packwiz 写入。
 
 退出码约定：`0` 成功，`1` 失败（无法解析、无适配版本、packwiz 报错），`2` 已在包内无需改动。
+
+搜索模式会按 `pack.toml` 的加载器与游戏版本过滤，只列出可安装的项目，并标注哪些已在包内；输入 `0` 取消。
 
 装完会询问是否立即补录清单文档。选是则当场录入中文名、分类与功能描述，写入由共用函数完成，与同步工具同一份实现；选否或加 `-NoPrompt` 时打印待办事项。
 

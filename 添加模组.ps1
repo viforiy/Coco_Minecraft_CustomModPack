@@ -16,6 +16,9 @@
 .PARAMETER Target
     项目链接、slug 或项目 ID; 省略时交互输入
 
+.PARAMETER Search
+    按关键词搜索候选项目, 结果按包设定的加载器与游戏版本过滤, 选择后录入
+
 .PARAMETER PackDir
     packwiz 包目录, 解析顺序与其它工具一致
 
@@ -32,6 +35,9 @@
 param(
     [Parameter(Position = 0)]
     [string]$Target,
+
+    # 按关键词搜索候选, 从结果中选择后录入
+    [string]$Search,
 
     [string]$PackDir,
     [string]$Proxy,
@@ -70,6 +76,58 @@ if (-not $meta.Minecraft -or $meta.Loaders.Count -eq 0) {
     Fail 'pack.toml 缺少 [versions] 配置, 无法确定加载器与游戏版本'
     Say  '  请检查 pack.toml 的 [versions] 段, 至少包含 minecraft 与一个加载器'
     exit 1
+}
+
+# 1.5) 搜索模式: 按关键词列出候选, 选择后转入正常录入流程
+if ($Search) {
+    Head "搜索 $Search"
+
+    # 已装清单, 用于候选里标注
+    $installedIds = New-Object System.Collections.Generic.List[string]
+    $installedSlugs = New-Object System.Collections.Generic.List[string]
+    foreach ($f in Get-ChildItem -LiteralPath (Join-Path $PackDir 'mods') -Filter '*.pw.toml' -ErrorAction SilentlyContinue) {
+        $m0 = Read-PwFile $f.FullName
+        if ($m0.MrId) { $installedIds.Add($m0.MrId) }
+        $installedSlugs.Add($m0.Key)
+    }
+
+    # 含中文时先查别名表, 命中则直接进入录入
+    $aliasHit = $null
+    if ($Search -match '[\u4e00-\u9fa5]') { $aliasHit = Resolve-Alias -PackDir $PackDir -Text $Search }
+    if ($aliasHit) {
+        Info "别名命中   $Search -> $aliasHit"
+        $Target = $aliasHit
+    } else {
+        $res = Get-MrSearch -Query $Search -Loaders $meta.Loaders -GameVersions @($meta.Minecraft) -Limit 10
+        if (-not $res -or -not $res.hits -or $res.hits.Count -eq 0) {
+            Warn "没有匹配「$Search」的项目"
+            Say  '  可换更短的关键词, 用中文名(需已生成别名表), 或直接粘贴 Modrinth 链接'
+            Say  '  别名表可用 维护别名表.bat 生成'
+            exit 1
+        }
+
+        Info ("共 {0} 条匹配, 显示前 {1} 条(已按 MC {2} / {3} 过滤)" -f $res.total_hits, $res.hits.Count, $meta.Minecraft, ($meta.Loaders -join ','))
+        Say ''
+        for ($i = 0; $i -lt $res.hits.Count; $i++) {
+            $h = $res.hits[$i]
+            $inst = ''
+            if ($installedIds.Contains([string]$h.project_id) -or $installedSlugs.Contains([string]$h.slug)) { $inst = '[已装]' }
+            $when = ''
+            if ($h.date_modified) { $when = ([string]$h.date_modified).Substring(0, 10) }
+            Say ("  {0,2}. {1} {2}" -f ($i + 1), $h.title, $inst)
+            Say ("      {0,-24} 下载 {1,12}   更新 {2}" -f $h.slug, (Format-Count $h.downloads), $when)
+        }
+        Say '   0. 取消'
+        Say ''
+        $pick = Read-Host '  选择序号'
+        if (-not $pick -or $pick -match '^0+$') { Info '已取消, 未做任何改动'; exit 0 }
+        if ($pick -notmatch '^\d+$' -or [int]$pick -lt 1 -or [int]$pick -gt $res.hits.Count) {
+            Fail "无效的序号: $pick"
+            exit 1
+        }
+        $Target = [string]$res.hits[[int]$pick - 1].slug
+        Info "已选择     $Target"
+    }
 }
 
 # 2) 输入
