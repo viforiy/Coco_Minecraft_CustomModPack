@@ -54,6 +54,7 @@ echo        需要推送时运行 推送元数据.bat, 或在仓库里手动 git add / commit / pus
 goto :done
 
 :failed
+if defined COCO_NO_PAUSE goto :done
 echo.
 echo [提示] 退出码 %RC%, 未进入推送环节, 按任意键关闭窗口
 pause >nul

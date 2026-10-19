@@ -94,8 +94,28 @@ if ($branch -ne $expected) {
     }
 }
 
-# 3) 变更汇总
-$status = (Invoke-Git @('-c','core.quotepath=false','status','--porcelain')).Out
+# 2.5) 一致性校验: 元数据与清单文档必须对齐, 否则先同步再推送
+$docPath = Join-Path $PackDir '模组列表介绍.md'
+if (Test-Path $docPath) {
+    $modKeys = @(Get-ChildItem (Join-Path $PackDir 'mods') -Filter '*.pw.toml' -ErrorAction SilentlyContinue | ForEach-Object { $_.Name -replace '\.pw\.toml$','' })
+    $docKeys = @(Get-DocSlugs -DocPath $docPath)
+    $onlyMods = @($modKeys | Where-Object { $docKeys -notcontains $_ })
+    $onlyDoc  = @($docKeys | Where-Object { $modKeys -notcontains $_ })
+    if ($onlyMods.Count -gt 0 -or $onlyDoc.Count -gt 0) {
+        Head '一致性校验未通过'
+        if ($onlyMods.Count -gt 0) { Say ("  元数据有、文档未记录 {0} 个: {1}" -f $onlyMods.Count, ($onlyMods -join ', ')) }
+        if ($onlyDoc.Count -gt 0)  { Say ("  文档有行、元数据缺失 {0} 个: {1}" -f $onlyDoc.Count, ($onlyDoc -join ', ')) }
+        Warn '推送会把不一致状态写进基线, 之后的同步将无法判断删除意图'
+        Say  '  顺序应为: 1 添加 -> 2 同步清单 -> 3 推送元数据'
+        Say  '  请先运行 维护模组清单.bat 完成同步, 再推送'
+        exit 2
+    }
+    Info "一致性校验通过: 元数据 $($modKeys.Count) 个, 文档 $($docKeys.Count) 条"
+} else {
+    Info '无清单文档, 跳过一致性校验'
+}
+
+# 3) 变更汇总$status = (Invoke-Git @('-c','core.quotepath=false','status','--porcelain')).Out
 $lines = @($status -split "`n" | Where-Object { $_.Trim() -ne '' })
 if ($lines.Count -eq 0) {
     Ok '工作区干净, 没有需要提交的改动'

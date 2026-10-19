@@ -105,12 +105,7 @@ if ($DryRun) { Warn 'DryRun 模式, 不会写入任何文件' }
 $mods = @(Get-ChildItem (Join-Path $PackDir 'mods') -Filter '*.pw.toml' | ForEach-Object { Read-PwFile $_.FullName } | Sort-Object Key)
 $docLines = [IO.File]::ReadAllText($DocPath, [Text.Encoding]::UTF8) -split "`r?`n"
 $sections = Read-DocSections $docLines
-$docKeys = @()
-foreach ($l in $docLines) {
-    if ($l -notmatch '^\|') { continue }
-    foreach ($mm in [regex]::Matches($l, '[`]([A-Za-z0-9][A-Za-z0-9_\-\.]*)[`]')) { $docKeys += $mm.Groups[1].Value }
-}
-$docKeys = $docKeys | Sort-Object -Unique
+$docKeys = @(Get-DocSlugs -DocPath $DocPath)
 Info ("元数据 {0} 个, 文档记录 {1} 个" -f $mods.Count, $docKeys.Count)
 
 # 2.5) 文档里存在、但元数据已没有的条目

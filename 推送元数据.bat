@@ -25,9 +25,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%PS1%" %*
 set "RC=%errorlevel%"
 
 if not "%RC%"=="0" (
-    echo.
-    echo [提示] 退出码 %RC%, 按任意键关闭窗口
-    pause >nul
+    if not defined COCO_NO_PAUSE (
+        echo.
+        echo [提示] 退出码 %RC%, 按任意键关闭窗口
+        pause >nul
+    )
 )
 endlocal
 exit /b %RC%

@@ -136,8 +136,27 @@ function Read-DocSections {
     return $list
 }
 
-function New-DocRow {
-    param($Mod, [string]$ChineseName, [string]$Deps, [string]$Desc, [string]$SideText)
+function Get-DocSlugs {
+    <#
+        从清单文档提取已记录的 slug 集合
+        只认表格行中的反引号 slug, 附录与正文不参与
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][string]$DocPath)
+
+    $out = New-Object System.Collections.Generic.List[string]
+    if (-not (Test-Path $DocPath)) { return $out.ToArray() }
+    foreach ($l in [IO.File]::ReadAllLines($DocPath, [Text.Encoding]::UTF8)) {
+        if ($l -notmatch '^\|') { continue }
+        foreach ($mm in [regex]::Matches($l, '[`]([A-Za-z0-9][A-Za-z0-9_\-\.]*)[`]')) {
+            $k = $mm.Groups[1].Value
+            if (-not $out.Contains($k)) { $out.Add($k) }
+        }
+    }
+    return $out.ToArray()
+}
+
+function New-DocRow {    param($Mod, [string]$ChineseName, [string]$Deps, [string]$Desc, [string]$SideText)
     $en = $Mod.Name
     if (-not $en) { $en = $Mod.Key }
     $label = $en

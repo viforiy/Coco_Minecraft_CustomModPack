@@ -27,10 +27,12 @@ echo   Coco 整合包 · 开发工具
 echo ==========================================================
 if exist "%BASE%菜单状态.ps1" powershell -NoProfile -ExecutionPolicy Bypass -File "%BASE%菜单状态.ps1"
 echo.
-echo   1  添加模组
-echo   2  同步清单
-echo   3  推送元数据
+echo   1  添加模组      录入新模组, 只改 mods/
+echo   2  同步清单      对齐 mods/ 与清单文档, 改动待提交
+echo   3  推送元数据    提交并推送, 须在同步之后
 echo   0  退出
+echo.
+echo   顺序 1 - 2 - 3; 先推送会把未同步状态写进基线
 echo.
 set "PICK="
 set /p "PICK=请选择: "
@@ -59,21 +61,27 @@ if not exist "%BASE%添加模组.bat" (
     pause
     goto :menu
 )
+set "COCO_NO_PAUSE=1"
 call "%BASE%添加模组.bat"
+set "COCO_NO_PAUSE="
 goto :menu
 
 :sync
 echo.
 set "COCO_NO_PUSH_PROMPT=1"
+set "COCO_NO_PAUSE=1"
 call "%BASE%维护模组清单.bat"
 set "RC=%errorlevel%"
 set "COCO_NO_PUSH_PROMPT="
+set "COCO_NO_PAUSE="
 if not "%RC%"=="0" goto :sync_failed
 echo.
 set "GO="
 set /p "GO=同步完成, 现在推送吗 [y/N] : "
 if /i not "%GO%"=="y" goto :menu
+set "COCO_NO_PAUSE=1"
 call "%BASE%推送元数据.bat"
+set "COCO_NO_PAUSE="
 goto :menu
 
 :sync_failed
@@ -86,7 +94,9 @@ goto :menu
 
 :push
 echo.
+set "COCO_NO_PAUSE=1"
 call "%BASE%推送元数据.bat"
+set "COCO_NO_PAUSE="
 goto :menu
 
 :bye
