@@ -32,7 +32,7 @@ if defined LAST_ACT (
 )
 if exist "%BASE%菜单状态.ps1" powershell -NoProfile -ExecutionPolicy Bypass -File "%BASE%菜单状态.ps1"
 echo.
-echo   1  添加模组      录入新模组, 只改 mods/
+echo   1  添加模组      链接/slug/中文名/关键词, 只改 mods/
 echo   2  删除模组      移除文档行与对应元数据
 echo   3  同步清单      对齐 mods/ 与文档, 改动待提交
 echo   4  推送元数据    提交并推送, 须在同步之后

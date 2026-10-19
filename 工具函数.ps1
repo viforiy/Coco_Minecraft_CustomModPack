@@ -843,10 +843,15 @@ function Get-MrSearch {
         [Parameter(Mandatory = $true)][string]$Query,
         [string[]]$Loaders,
         [string[]]$GameVersions,
-        [int]$Limit = 10
+        [int]$Limit = 10,
+        # 项目类型, 默认只搜模组; 整合包/光影/资源包会被排除
+        [string[]]$ProjectTypes = @('mod')
     )
 
     $parts = @()
+    if ($ProjectTypes -and $ProjectTypes.Count -gt 0) {
+        $parts += '[' + (($ProjectTypes | ForEach-Object { '"project_type:' + $_ + '"' }) -join ',') + ']'
+    }
     if ($Loaders -and $Loaders.Count -gt 0) {
         $parts += '[' + (($Loaders | ForEach-Object { '"categories:' + $_ + '"' }) -join ',') + ']'
     }

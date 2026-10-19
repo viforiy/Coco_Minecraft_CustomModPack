@@ -81,6 +81,7 @@ git clone -b dev https://github.com/viforiy/Coco_Minecraft_CustomModPack.git Coc
 添加模组.bat jade
 添加模组.bat 苹果皮                  :: 中文名先查别名表
 添加模组.bat -Search sodium          :: 按关键词搜索候选, 选序号录入
+添加模组.bat 机械动力                :: 别名未命中时自动转为关键词搜索
 添加模组.bat jade -DryRun          :: 只解析与检查
 ```
 
@@ -88,7 +89,7 @@ git clone -b dev https://github.com/viforiy/Coco_Minecraft_CustomModPack.git Coc
 
 退出码约定：`0` 成功，`1` 失败（无法解析、无适配版本、packwiz 报错），`2` 已在包内无需改动。
 
-搜索模式会按 `pack.toml` 的加载器与游戏版本过滤，只列出可安装的项目，并标注哪些已在包内；输入 `0` 取消。
+搜索会按 `pack.toml` 的加载器与游戏版本过滤，且只搜模组（排除整合包、光影、资源包），标注已在包内的项目；输入 `0` 取消。中文名先查别名表，未命中时自动转搜索。
 
 装完会询问是否立即补录清单文档。选是则当场录入中文名、分类与功能描述，写入由共用函数完成，与同步工具同一份实现；选否或加 `-NoPrompt` 时打印待办事项。
 
