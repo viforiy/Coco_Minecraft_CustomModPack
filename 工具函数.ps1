@@ -33,16 +33,30 @@ function Fail   { param($m) Write-Host "[错误] $m" -ForegroundColor Red }
 $script:ApiProxy = $Proxy
 
 function Invoke-Api {
-    param([string]$Url, [int]$Retry = 0)
+    <#
+        请求 Modrinth 接口并解析 JSON
+
+        不使用 Invoke-RestMethod: 它在响应缺少 charset 时按 Latin-1 解码,
+        会把中文标题与 emoji 变成乱码; 这里显式取原始字节按 UTF-8 解码。
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][string]$Url, [int]$Retry = 0)
+
     $headers = @{ 'User-Agent' = 'CocoPackTool/1.0 (packwiz modlist helper)' }
     $attempts = @()
     if ($script:ApiProxy) { $attempts += $script:ApiProxy }
     else { $attempts += ''; $attempts += 'http://127.0.0.1:7890' }
 
-    foreach ($p in $attempts) {
+    $lastErr = ''
+    foreach ($proxyAddr in $attempts) {
         try {
-            if ($p) { return Invoke-RestMethod -Uri $Url -Headers $headers -Proxy $p -TimeoutSec 25 }
-            return Invoke-RestMethod -Uri $Url -Headers $headers -TimeoutSec 25
+            $params = @{ Uri = $Url; Headers = $headers; TimeoutSec = 25; UseBasicParsing = $true }
+            if ($proxyAddr) { $params['Proxy'] = $proxyAddr }
+            $resp = Invoke-WebRequest @params
+            $bytes = $resp.RawContentStream.ToArray()
+            if (-not $bytes -or $bytes.Length -eq 0) { return $null }
+            $text = [Text.Encoding]::UTF8.GetString($bytes)
+            return ($text | ConvertFrom-Json)
         } catch {
             $lastErr = $_.Exception.Message
         }
@@ -290,4 +304,116 @@ function Get-RequiredDeps {
     if ($ids.Count -eq 0) { return @() }
     $projs = Get-MrProjectTitles $ids
     return @($projs | ForEach-Object { $_.title })
+}
+
+# ---------------------------------------------------------------------------
+#  pack.toml 与 packwiz
+# ---------------------------------------------------------------------------
+
+function Read-PackMeta {
+    <#
+        读取 pack.toml 的名称与 [versions] 段
+        Loaders 为除 minecraft 之外的键, 例如 neoforge / forge / fabric
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][string]$PackDir)
+
+    $meta = [pscustomobject]@{
+        Name     = ''
+        Minecraft = ''
+        Loaders  = @()
+        Versions = @{}
+    }
+    $path = Join-Path $PackDir 'pack.toml'
+    if (-not (Test-Path $path)) { return $meta }
+
+    $section = ''
+    $loaders = New-Object System.Collections.Generic.List[string]
+    foreach ($l in [IO.File]::ReadAllLines($path, [Text.Encoding]::UTF8)) {
+        if ($l -match '^\s*\[(.+?)\]\s*$') { $section = $Matches[1].Trim(); continue }
+        if ($l -match '^\s*([A-Za-z0-9_\-]+)\s*=\s*"(.*)"\s*$') {
+            $k = $Matches[1]; $v = $Matches[2]
+            if ($section -eq '' -and $k -eq 'name') { $meta.Name = $v }
+            if ($section -eq 'versions') {
+                $meta.Versions[$k] = $v
+                if ($k -eq 'minecraft') { $meta.Minecraft = $v }
+                else { $loaders.Add($k) }
+            }
+        }
+    }
+    $meta.Loaders = $loaders.ToArray()
+    return $meta
+}
+
+function Resolve-Packwiz {
+    <#
+        依次尝试: 参数 -> 缓存目录 -> PATH
+        返回可执行文件路径, 找不到返回 $null
+    #>
+    [CmdletBinding()]
+    param([string]$Explicit)
+
+    foreach ($c in @($Explicit, (Join-Path $env:LOCALAPPDATA 'CocoPackwiz\meta\packwiz.exe'))) {
+        if ($c -and (Test-Path $c)) { return $c }
+    }
+    $cmd = Get-Command packwiz -ErrorAction SilentlyContinue
+    if ($cmd) { return $cmd.Source }
+    return $null
+}
+
+function Get-MrProjectVersions {
+    <#
+        查询项目版本; 传入 Loaders 与 GameVersions 时按 facets 过滤
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$Id,
+        [string[]]$Loaders,
+        [string[]]$GameVersions
+    )
+
+    $url = "https://api.modrinth.com/v2/project/$Id/version"
+    $q = @()
+    if ($Loaders -and $Loaders.Count -gt 0) {
+        $q += 'loaders=' + [uri]::EscapeDataString('[' + (($Loaders | ForEach-Object { '"' + $_ + '"' }) -join ',') + ']')
+    }
+    if ($GameVersions -and $GameVersions.Count -gt 0) {
+        $q += 'game_versions=' + [uri]::EscapeDataString('[' + (($GameVersions | ForEach-Object { '"' + $_ + '"' }) -join ',') + ']')
+    }
+    if ($q.Count -gt 0) { $url += '?' + ($q -join '&') }
+
+    try { return @(Invoke-Api $url) } catch { return @() }
+}
+
+function Select-PreferredVersion {
+    <#
+        从版本列表选出最合适的一个: 优先 release, 其次按发布时间倒序
+    #>
+    [CmdletBinding()]
+    param([object[]]$Versions)
+
+    if (-not $Versions -or $Versions.Count -eq 0) { return $null }
+    $sorted = $Versions | Sort-Object -Property @{ Expression = { $_.date_published } } -Descending
+    $release = @($sorted | Where-Object { $_.version_type -eq 'release' })
+    if ($release.Count -gt 0) { return $release[0] }
+    return $sorted[0]
+}
+
+function ConvertTo-MrSlug {
+    <#
+        从 Modrinth 链接或裸 slug/ID 中提取可查询的项目标识
+        支持:
+          https://modrinth.com/mod/<slug>
+          https://modrinth.com/mod/<slug>/version/<vid>
+          <slug> 或 <projectId>
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][string]$InputText)
+
+    $text = $InputText.Trim()
+    # slug 段只取到下一个 / ? # 为止, 避免把 /version/<vid> 一起带出来
+    if ($text -match '^https?://(?:www\.)?modrinth\.com/(?:mod|project|datapack|plugin|shader|resourcepack)/([^/?#]+)') {
+        return $Matches[1].Trim()
+    }
+    return $text
 }

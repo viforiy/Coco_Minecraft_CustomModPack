@@ -15,6 +15,7 @@
 
 | 文件 | 作用 |
 | --- | --- |
+| `添加模组.bat` / `.ps1` | 按链接或 slug 录入 Modrinth 项目，自动匹配包设定的加载器与游戏版本 |
 | `维护模组清单.bat` / `.ps1` | 同步 `mods/` 与清单文档：清理失效条目、刷新 jar 与安装端、补录新条目 |
 | `推送元数据.bat` / `.ps1` | 提交并推送 `main` 分支的元数据，直连失败时自动尝试代理 |
 | `获取PW-GUI.bat` | 下载 packwiz 图形化编辑器，用于编辑元数据 |
@@ -70,6 +71,18 @@ git clone -b dev https://github.com/viforiy/Coco_Minecraft_CustomModPack.git Coc
 ```
 
 压缩包下载：<https://github.com/viforiy/Coco_Minecraft_CustomModPack/archive/refs/heads/dev.zip>
+
+### 添加模组
+
+```bat
+添加模组.bat https://modrinth.com/mod/jade
+添加模组.bat jade
+添加模组.bat jade -DryRun          :: 只解析与检查
+```
+
+流程：解析输入 → 校验项目 → 检查是否已在包内 → 按 `pack.toml` 的加载器与游戏版本筛选版本 → 调 packwiz 写入。
+
+退出码约定：`0` 成功，`1` 失败（无法解析、无适配版本、packwiz 报错），`2` 已在包内无需改动。
 
 ### 维护模组清单
 
