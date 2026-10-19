@@ -160,30 +160,65 @@ if ($otherFiles.Count)  { Say ("  其它改动 {0}: {1}" -f $otherFiles.Count,  
 Say ("  共 {0} 个文件" -f $lines.Count)
 
 # 4) 提交信息
+# 标题带模组名, 便于 git log --grep 检索; 超出长度上限时截断并标注总数
+function Format-NameList {
+    param([string[]]$Names, [int]$Max = 3)
+    if (-not $Names -or $Names.Count -eq 0) { return '' }
+    if ($Names.Count -le $Max) { return ($Names -join ' ') }
+    return (($Names | Select-Object -First $Max) -join ' ') + " 等 $($Names.Count) 个"
+}
+
+function New-CommitTitle {
+    param([string[]]$Added, [string[]]$Deleted, [string[]]$Changed, [int]$Max = 3)
+    $parts = @()
+    if ($Added.Count)   { $parts += '新增 ' + (Format-NameList $Added $Max) }
+    if ($Deleted.Count) { $parts += '删除 ' + (Format-NameList $Deleted $Max) }
+    if ($Changed.Count) { $parts += '更新 ' + (Format-NameList $Changed $Max) }
+    if ($parts.Count -eq 0) { $parts += '同步文件' }
+    return '同步模组元数据: ' + ($parts -join ', ')
+}
+
 $title = $Message
 if (-not $title) {
-    $parts = @()
-    if ($addedMods.Count)   { $parts += "新增 $($addedMods.Count)" }
-    if ($deletedMods.Count) { $parts += "删除 $($deletedMods.Count)" }
-    if ($modChanged.Count)  { $parts += "更新 $($modChanged.Count)" }
-    if ($parts.Count -eq 0) { $parts += '同步文件' }
-    $title = '同步模组元数据: ' + ($parts -join ' / ')
+    $title = New-CommitTitle $addedMods $deletedMods $modChanged 3
+    # 标题控制在 72 字符内, 超长时减少列举个数
+    foreach ($cap in @(2, 1)) {
+        if ($title.Length -le 72) { break }
+        $title = New-CommitTitle $addedMods $deletedMods $modChanged $cap
+    }
 }
 Say ''
 Say "  提交信息标题: $title"
+Say  ("                ({0} 字符)" -f $title.Length)
 if (-not $NoPrompt) {
     $custom = Read-Host '  回车沿用上面的标题, 或输入自定义标题'
     if ($custom) { $title = $custom }
 }
 
+# 正文分节列举, 便于 git log 阅读与逐项检索
 $body = New-Object System.Collections.Generic.List[string]
 $body.Add($title)
 $body.Add('')
-if ($addedMods.Count)   { $body.Add('新增: ' + ($addedMods -join ', ')) }
-if ($deletedMods.Count) { $body.Add('删除: ' + ($deletedMods -join ', ')) }
-if ($modChanged.Count)  { $body.Add('更新: ' + ($modChanged -join ', ')) }
-if ($otherFiles.Count)  { $body.Add('其它: ' + ($otherFiles -join ', ')) }
-$body.Add('')
+if ($addedMods.Count) {
+    $body.Add("新增模组 $($addedMods.Count) 个")
+    foreach ($s in $addedMods) { $body.Add("- $s") }
+    $body.Add('')
+}
+if ($deletedMods.Count) {
+    $body.Add("删除模组 $($deletedMods.Count) 个")
+    foreach ($s in $deletedMods) { $body.Add("- $s") }
+    $body.Add('')
+}
+if ($modChanged.Count) {
+    $body.Add("更新模组 $($modChanged.Count) 个")
+    foreach ($s in $modChanged) { $body.Add("- $s") }
+    $body.Add('')
+}
+if ($otherFiles.Count) {
+    $body.Add("其它文件 $($otherFiles.Count) 个")
+    foreach ($s in $otherFiles) { $body.Add("- $s") }
+    $body.Add('')
+}
 $body.Add('由 推送元数据.bat 生成')
 
 if ($DryRun) {
