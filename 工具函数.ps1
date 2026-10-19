@@ -723,6 +723,57 @@ function Get-BaselineDocSlugs {
 }
 
 # ---------------------------------------------------------------------------
+#  录入: 调用 packwiz 写入单个项目
+# ---------------------------------------------------------------------------
+
+function Invoke-PackwizAdd {
+    <#
+        调用 packwiz modrinth add 录入指定项目与版本
+        直连失败且错误看起来是网络问题时, 临时挂本机代理重试一次
+        返回 @{ Ok; Out; Code }
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$PackDir,
+        [Parameter(Mandatory = $true)][string]$ProjectId,
+        [Parameter(Mandatory = $true)][string]$VersionId
+    )
+
+    $packwiz = Resolve-Packwiz
+    if (-not $packwiz) {
+        return [pscustomobject]@{ Ok = $false; Out = '找不到 packwiz.exe'; Code = -1 }
+    }
+
+    $pwArgs = @('modrinth','add','--project-id',$ProjectId,'--version-id',$VersionId,'-y')
+    Push-Location $PackDir
+    $prevHttps = $env:HTTPS_PROXY
+    $prevHttp  = $env:HTTP_PROXY
+    try {
+        $out = & $packwiz @pwArgs 2>&1
+        $code = $LASTEXITCODE
+        if ($code -ne 0) {
+            $joined = (($out | ForEach-Object { "$_" }) -join ' ')
+            if ($joined -match 'proxy|connect|timeout|dial|network') {
+                $env:HTTPS_PROXY = 'http://127.0.0.1:7890'
+                $env:HTTP_PROXY  = 'http://127.0.0.1:7890'
+                $out = & $packwiz @pwArgs 2>&1
+                $code = $LASTEXITCODE
+            }
+        }
+    } finally {
+        $env:HTTPS_PROXY = $prevHttps
+        $env:HTTP_PROXY  = $prevHttp
+        Pop-Location
+    }
+
+    return [pscustomobject]@{
+        Ok   = ($code -eq 0)
+        Out  = (($out | ForEach-Object { "$_" }) -join "`n")
+        Code = $code
+    }
+}
+
+# ---------------------------------------------------------------------------
 #  删除元数据: 确认 -> 备份 -> 移除 -> 刷新 -> 重算计数
 # ---------------------------------------------------------------------------
 
@@ -923,4 +974,36 @@ function Get-CjkGrams {
         if (-not $grams.Contains($g)) { $grams.Add($g) }
     }
     return @($grams | Select-Object -First $Max)
+}
+
+function Get-RequiredDepProjects {
+    <#
+        取某个版本声明的必需前置项目
+
+        返回 @{ Id; Slug; Title }, 已按项目去重; 取不到时返回空数组
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][string]$VersionId)
+
+    $ver = Get-MrVersion $VersionId
+    if (-not $ver -or -not $ver.dependencies) { return @() }
+
+    $ids = New-Object System.Collections.Generic.List[string]
+    foreach ($d in $ver.dependencies) {
+        if ($d.dependency_type -ne 'required') { continue }
+        if (-not $d.project_id) { continue }
+        if (-not $ids.Contains([string]$d.project_id)) { $ids.Add([string]$d.project_id) }
+    }
+    if ($ids.Count -eq 0) { return @() }
+
+    $out = New-Object System.Collections.Generic.List[object]
+    foreach ($id in $ids) {
+        $proj = Get-MrProject -IdOrSlug $id
+        if ($proj) {
+            $out.Add([pscustomobject]@{ Id = [string]$proj.id; Slug = [string]$proj.slug; Title = [string]$proj.title })
+        } else {
+            $out.Add([pscustomobject]@{ Id = $id; Slug = $id; Title = $id })
+        }
+    }
+    return $out.ToArray()
 }

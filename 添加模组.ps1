@@ -240,7 +240,6 @@ if (-not $packwiz) {
     Say  '  请先运行一次客户端更新脚本以下载缓存, 或把 packwiz 放进 PATH'
     exit 1
 }
-$cmdArgs = @('modrinth','add','--project-id',$proj.id,'--version-id',$pick.id,'-y')
 
 Say ''
 Info '将执行    packwiz modrinth add --project-id <id> --version-id <vid> -y'
@@ -251,32 +250,10 @@ if ($DryRun) {
 }
 
 # 7) 执行
-Push-Location $PackDir
-$prevProxyHttps = $env:HTTPS_PROXY
-$prevProxyHttp  = $env:HTTP_PROXY
-try {
-    $out = & $packwiz @cmdArgs 2>&1
-    $code = $LASTEXITCODE
-    if ($code -ne 0) {
-        # 网络类失败时挂代理重试一次
-        $text = ($out | ForEach-Object { "$_" }) -join "`n"
-        if ($text -match 'proxy|connect|timeout|dial|network') {
-            Warn '直连失败, 尝试经本机代理重试'
-            $env:HTTPS_PROXY = 'http://127.0.0.1:7890'
-            $env:HTTP_PROXY  = 'http://127.0.0.1:7890'
-            $out = & $packwiz @cmdArgs 2>&1
-            $code = $LASTEXITCODE
-        }
-    }
-} finally {
-    $env:HTTPS_PROXY = $prevProxyHttps
-    $env:HTTP_PROXY  = $prevProxyHttp
-    Pop-Location
-}
-
-if ($code -ne 0) {
-    Fail "packwiz 执行失败 (退出码 $code)"
-    $out | ForEach-Object { Say "  $_" }
+$res7 = Invoke-PackwizAdd -PackDir $PackDir -ProjectId $proj.id -VersionId $pick.id
+if (-not $res7.Ok) {
+    Fail "packwiz 执行失败 (退出码 $($res7.Code))"
+    $res7.Out -split "`n" | ForEach-Object { if ($_ -ne '') { Say "  $_" } }
     exit 1
 }
 
@@ -333,6 +310,61 @@ if ($doRecord) {
     Say  "[待办] 已安装 $($proj.slug), 但尚未写入清单"
     Say  '       运行 维护模组清单.bat 补录, 或在 开发工具.bat 里选 3'
     Say  '       未补录时文档与 mods/ 不一致, 推送前的一致性校验会拦截'
+}
+
+Say ''
+Head '必需前置'
+$deps = @(Get-RequiredDepProjects -VersionId $pick.id)
+if ($deps.Count -eq 0) {
+    Info '该模组未声明必需前置'
+} else {
+    $haveIds = New-Object System.Collections.Generic.List[string]
+    $haveSlugs = New-Object System.Collections.Generic.List[string]
+    foreach ($f in Get-ChildItem -LiteralPath (Join-Path $PackDir 'mods') -Filter '*.pw.toml' -ErrorAction SilentlyContinue) {
+        $m1 = Read-PwFile $f.FullName
+        if ($m1.MrId) { $haveIds.Add($m1.MrId) }
+        $haveSlugs.Add($m1.Key)
+    }
+    $missingDeps = @($deps | Where-Object { -not $haveIds.Contains($_.Id) -and $haveSlugs -notContains $_.Slug })
+
+    if ($missingDeps.Count -eq 0) {
+        Info ("前置均已就绪(由 packwiz 一并添加): {0}" -f (($deps | ForEach-Object { $_.Title }) -join '、'))
+    } else {
+        Warn ("packwiz 未能补齐 {0} 个必需前置:" -f $missingDeps.Count)
+        foreach ($d in $missingDeps) { Say ("    - {0}  ({1})" -f $d.Title, $d.Slug) }
+
+        $addDeps = $true
+        if ($NoPrompt) {
+            Info '已指定 -NoPrompt, 跳过补加'
+            $addDeps = $false
+        } else {
+            $ans2 = Read-Host '  现在尝试补加吗 [Y/n]'
+            if ($ans2 -and $ans2 -notmatch '^[Yy]') { $addDeps = $false }
+        }
+
+        if ($addDeps) {
+            $okCount = 0
+            foreach ($d in $missingDeps) {
+                $dv = @(Get-MrProjectVersions -Id $d.Id -Loaders $meta.Loaders -GameVersions @($meta.Minecraft))
+                if ($dv.Count -eq 0) {
+                    Warn ("{0} 没有适配 MC {1} / {2} 的版本, 跳过" -f $d.Slug, $meta.Minecraft, ($meta.Loaders -join ','))
+                    continue
+                }
+                $dpick = Select-PreferredVersion -Versions $dv
+                $dr = Invoke-PackwizAdd -PackDir $PackDir -ProjectId $d.Id -VersionId $dpick.id
+                if ($dr.Ok) {
+                    $okCount++
+                    Ok ("已补加 {0}  {1}" -f $d.Slug, $dpick.version_number)
+                } else {
+                    $lastLine = ($dr.Out -split "`n" | Where-Object { $_ -match '\S' } | Select-Object -Last 1)
+                    Warn ("补加 {0} 失败: {1}" -f $d.Slug, $lastLine)
+                }
+            }
+            Info ("补加完成: 成功 {0} / 共 {1}" -f $okCount, $missingDeps.Count)
+        } else {
+            Say '  未补加前置, 该模组可能无法启动'
+        }
+    }
 }
 
 Say ''
