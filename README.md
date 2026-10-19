@@ -16,6 +16,7 @@
 | 文件 | 作用 |
 | --- | --- |
 | `添加模组.bat` / `.ps1` | 按链接或 slug 录入 Modrinth 项目，自动匹配包设定的加载器与游戏版本 |
+| `维护别名表.bat` / `.ps1` | 从清单文档提取中文名，生成 中文名 → slug 对照表 |
 | `维护模组清单.bat` / `.ps1` | 同步 `mods/` 与清单文档：清理失效条目、刷新 jar 与安装端、补录新条目 |
 | `推送元数据.bat` / `.ps1` | 提交并推送 `main` 分支的元数据，直连失败时自动尝试代理 |
 | `获取PW-GUI.bat` | 下载 packwiz 图形化编辑器，用于编辑元数据 |
@@ -77,6 +78,7 @@ git clone -b dev https://github.com/viforiy/Coco_Minecraft_CustomModPack.git Coc
 ```bat
 添加模组.bat https://modrinth.com/mod/jade
 添加模组.bat jade
+添加模组.bat 苹果皮                  :: 中文名先查别名表
 添加模组.bat jade -DryRun          :: 只解析与检查
 ```
 

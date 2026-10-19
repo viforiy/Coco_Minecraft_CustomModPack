@@ -516,3 +516,145 @@ function Invoke-ModEntry {
         SideChanged = $sideChanged
     }
 }
+
+# ---------------------------------------------------------------------------
+#  别名表: 中文名 -> slug
+# ---------------------------------------------------------------------------
+
+function Get-AliasPath {
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][string]$PackDir)
+    return (Join-Path $PackDir '别名表.cfg')
+}
+
+function Read-AliasTable {
+    <#
+        读取别名表, 返回 @{ Alias; Slug; Source } 数组
+        文件不存在时返回空数组
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][string]$PackDir)
+
+    $out = New-Object System.Collections.Generic.List[object]
+    $path = Get-AliasPath $PackDir
+    if (-not (Test-Path $path)) { return $out.ToArray() }
+    foreach ($line in [IO.File]::ReadAllLines($path, [Text.Encoding]::UTF8)) {
+        if ($line -match '^\s*#' -or $line.Trim() -eq '') { continue }
+        $parts = $line -split "`t"
+        if ($parts.Count -lt 2) { continue }
+        $out.Add([pscustomobject]@{
+            Alias  = $parts[0].Trim()
+            Slug   = $parts[1].Trim()
+            Source = if ($parts.Count -ge 3) { $parts[2].Trim() } else { 'manual' }
+        })
+    }
+    return $out.ToArray()
+}
+
+function Save-AliasTable {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$PackDir,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Entries
+    )
+
+    $sorted = @($Entries | Sort-Object -Property Slug, Alias)
+    $lines = @(
+        '# Coco 整合包别名表: 中文名 -> slug',
+        '# 格式: 中文名 <TAB> slug <TAB> 来源',
+        '# 来源取值: doc(清单文档导入) / mcmod(百科查询) / manual(手工录入)',
+        '# 由 维护别名表.bat 生成并合并, 不入库; 以清单文档为准, 手工条目会被保留',
+        ''
+    )
+    foreach ($e in $sorted) { $lines += ("{0}`t{1}`t{2}" -f $e.Alias, $e.Slug, $e.Source) }
+    [IO.File]::WriteAllText((Get-AliasPath $PackDir), ($lines -join "`r`n"), (New-Object Text.UTF8Encoding($false)))
+    return $sorted.Count
+}
+
+function Update-AliasTableFromDoc {
+    <#
+        从清单文档提取中文名并合并进别名表
+
+        提取方式: 行标签形如 **中文 English**, 用元数据里的 name 作为英文锚点剥掉,
+        剩余含中文的部分即别名; 剥不出中文的行跳过。
+
+        合并策略: doc 来源整体刷新; mcmod 与 manual 来源原样保留。
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$PackDir,
+        [string]$DocPath
+    )
+
+    if (-not $DocPath) { $DocPath = Join-Path $PackDir '模组列表介绍.md' }
+    $stats = [pscustomobject]@{ Total = 0; FromDoc = 0; Kept = 0; Added = 0; Skipped = 0 }
+
+    if (-not (Test-Path $DocPath)) { return $stats }
+
+    $kept = @(Read-AliasTable $PackDir | Where-Object { $_.Source -ne 'doc' })
+    $existingDoc = @(Read-AliasTable $PackDir | Where-Object { $_.Source -eq 'doc' })
+    $existingKeys = @{}
+    foreach ($e in $existingDoc) { $existingKeys["$($e.Alias)`t$($e.Slug)"] = $true }
+
+    $fresh = New-Object System.Collections.Generic.List[object]
+    $seen = @{}
+    foreach ($line in [IO.File]::ReadAllLines($DocPath, [Text.Encoding]::UTF8)) {
+        if ($line -notmatch '^\|') { continue }
+        if ($line -notmatch '\*\*(.+?)\*\*') { continue }
+        $label = $Matches[1].Trim()
+        if ($label -notmatch '[\u4e00-\u9fa5]') { continue }
+        $slug = ''
+        if ($line -match '[`]([A-Za-z0-9][A-Za-z0-9_\-\.]*)[`]') { $slug = $Matches[1] }
+        if (-not $slug) { $stats.Skipped++; continue }
+
+        $pwPath = Join-Path (Join-Path $PackDir 'mods') "$slug.pw.toml"
+        $enName = ''
+        if (Test-Path $pwPath) { $enName = (Read-PwFile $pwPath).Name }
+
+        $alias = $label
+        if ($enName -and $alias.Contains($enName)) {
+            # 首选: 用元数据里的英文名做锚点精确剥离
+            $alias = $alias.Replace($enName, '')
+        } else {
+            # 兜底: 无元数据时只保留含中文的词, 避免把英文名写进别名
+            $tokens = @($alias -split '\s+' | Where-Object { $_ -match '[\u4e00-\u9fa5]' })
+            if ($tokens.Count -gt 0) { $alias = ($tokens -join ' ') }
+        }
+        $alias = $alias -replace '^[A-Za-z0-9_\-\.]+', '' -replace '[A-Za-z0-9_\-\.]+$', ''
+        $alias = $alias.Trim().Trim([char[]]@(' ', '·', '-', '_', '：', ':', '/', '|', '(', ')', '（', '）'))
+        if ($alias -match '[\u4e00-\u9fa5]' -eq $false) { $stats.Skipped++; continue }
+
+        $key = "$alias`t$slug"
+        if ($seen.ContainsKey($key)) { continue }
+        $seen[$key] = $true
+        $fresh.Add([pscustomobject]@{ Alias = $alias; Slug = $slug; Source = 'doc' })
+        if (-not $existingKeys.ContainsKey($key)) { $stats.Added++ }
+    }
+
+    $merged = @($kept) + @($fresh.ToArray())
+    $stats.FromDoc = $fresh.Count
+    $stats.Kept = $kept.Count
+    $stats.Total = $merged.Count
+    [void](Save-AliasTable -PackDir $PackDir -Entries $merged)
+    return $stats
+}
+
+function Resolve-Alias {
+    <#
+        按中文名查 slug; 精确匹配优先, 其次忽略大小写的包含匹配(唯一命中才算)
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$PackDir,
+        [Parameter(Mandatory = $true)][string]$Text
+    )
+
+    $table = @(Read-AliasTable $PackDir)
+    if ($table.Count -eq 0) { return $null }
+    $q = $Text.Trim()
+    $exact = @($table | Where-Object { $_.Alias -eq $q })
+    if ($exact.Count -ge 1) { return $exact[0].Slug }
+    $loose = @($table | Where-Object { $_.Alias -like "*$q*" -or $q -like "*$($_.Alias)*" })
+    if ($loose.Count -eq 1) { return $loose[0].Slug }
+    return $null
+}

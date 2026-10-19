@@ -80,6 +80,24 @@ if (-not $raw) {
 if (-not $raw) { Fail '未提供输入, 已中止'; exit 1 }
 
 $key = ConvertTo-MrSlug -InputText $raw
+
+# 含中文的输入一律走别名表, 避免把中文名当 slug 去查接口
+if ($raw -match '[\u4e00-\u9fa5]') {
+    $hit = Resolve-Alias -PackDir $PackDir -Text $raw
+    if ($hit) {
+        Info "别名命中   $raw -> $hit"
+        $key = $hit
+    } else {
+        Fail "别名表里没有「$raw」"
+        $aliasPath = Get-AliasPath $PackDir
+        if (-not (Test-Path $aliasPath)) {
+            Say  '  别名表尚未生成, 先运行 维护别名表.bat'
+        } else {
+            Say  '  可改用 Modrinth 链接或 slug, 或在 别名表.cfg 追加一行(来源写 manual)'
+        }
+        exit 1
+    }
+}
 Info "解析结果   $key"
 
 # 3) 校验项目

@@ -108,6 +108,13 @@ $sections = @(Read-DocSections $docLines)
 $docKeys = @(Get-DocSlugs -DocPath $DocPath)
 Info ("元数据 {0} 个, 文档记录 {1} 个" -f $mods.Count, $docKeys.Count)
 
+# 2.4) 顺手刷新别名表: 覆盖手工改过文档但未运行别名工具的情形
+#      后续若有补录写入, 保存后会再刷新一次
+if (-not $DryRun) {
+    $aliasStats = Update-AliasTableFromDoc -PackDir $PackDir -DocPath $DocPath
+    Info "别名表已刷新: $($aliasStats.Total) 条"
+}
+
 # 2.5) 文档里存在、但元数据已没有的条目
 $modKeys = @($mods | ForEach-Object { $_.Key })
 $stale = @()
@@ -219,7 +226,14 @@ if ($newRows.Count -eq 0) { Warn '没有新增任何条目'; exit 0 }
 
 # 5) 写回文档
 $finalLines = Save-DocWithRows $DocPath $docLines $sections $newRows
-if ($DryRun) { Warn 'DryRun, 文档未写入' } else { Ok "文档已更新 $DocPath" }
+if ($DryRun) {
+    Warn 'DryRun, 文档未写入'
+} else {
+    Ok "文档已更新 $DocPath"
+    # 顺带刷新别名表, 保证中文名对照跟随文档
+    $aliasStats = Update-AliasTableFromDoc -PackDir $PackDir -DocPath $DocPath
+    Info "别名表已刷新: $($aliasStats.Total) 条"
+}
 if ($sideChanged -gt 0) { Info "共修改 $sideChanged 个 .pw.toml 的 side" }
 
 # 6) packwiz refresh
