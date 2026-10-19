@@ -96,12 +96,21 @@ function Resolve-PackDir {
         [switch]$NonInteractive
     )
 
+    # 显式指定且合法时直接用, 不再列候选
+    if ($CliValue) {
+        $explicit = $CliValue.Trim().Trim('"').TrimEnd('\')
+        if (Test-PackDir $explicit) { return (Resolve-Path $explicit).Path }
+        Write-Host "[注意] -PackDir 指定的目录缺少 pack.toml 或 mods: $explicit" -ForegroundColor Yellow
+    }
+
     $cfg = Read-ToolConfig $ToolRoot
     $candidates = @(Find-PackCandidates -ToolRoot $ToolRoot -CliValue $CliValue -Configured $cfg['PACK_DIR'])
+    # 显式 -PackDir 视为一次性指定, 不回写配置
+    $persist = [string]::IsNullOrWhiteSpace($CliValue)
 
     if ($candidates.Count -eq 1) {
         $chosen = $candidates[0]
-        if ($cfg['PACK_DIR'] -ne $chosen) {
+        if ($persist -and $cfg['PACK_DIR'] -ne $chosen) {
             $cfg['PACK_DIR'] = $chosen
             [void](Save-ToolConfig -ToolRoot $ToolRoot -Config $cfg)
             Write-Host "[信息] 已记住包目录: $chosen" -ForegroundColor Gray
@@ -123,9 +132,11 @@ function Resolve-PackDir {
             if (-not $pick -or $pick -notmatch '^\d+$' -or [int]$pick -lt 1 -or [int]$pick -gt $candidates.Count) { $pick = '1' }
             $chosen = $candidates[[int]$pick - 1]
         }
-        $cfg['PACK_DIR'] = $chosen
-        [void](Save-ToolConfig -ToolRoot $ToolRoot -Config $cfg)
-        Write-Host "[信息] 已记住包目录: $chosen" -ForegroundColor Gray
+        if ($persist) {
+            $cfg['PACK_DIR'] = $chosen
+            [void](Save-ToolConfig -ToolRoot $ToolRoot -Config $cfg)
+            Write-Host "[信息] 已记住包目录: $chosen" -ForegroundColor Gray
+        }
         return (Resolve-Path $chosen).Path
     }
 

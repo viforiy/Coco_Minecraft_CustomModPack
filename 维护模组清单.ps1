@@ -230,6 +230,51 @@ function Get-SideText {
     return $t
 }
 
+function New-DocSkeleton {
+    param(
+        [Parameter(Mandatory = $true)][string]$PackDir,
+        [Parameter(Mandatory = $true)][string]$DocPath,
+        [Parameter(Mandatory = $true)]$Mods
+    )
+
+    # 标题取 pack.toml 的 name, 缺失时用目录名
+    $packName = ''
+    $packToml = Join-Path $PackDir 'pack.toml'
+    if (Test-Path $packToml) {
+        foreach ($l in [IO.File]::ReadAllLines($packToml, [Text.Encoding]::UTF8)) {
+            if ($l -match '^\s*name\s*=\s*"(.*)"\s*$') { $packName = $Matches[1]; break }
+        }
+    }
+    if (-not $packName) { $packName = Split-Path -Leaf $PackDir }
+
+    $total = $Mods.Count
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add("# $packName · 模组清单说明")
+    $lines.Add('')
+    $lines.Add("下文表格与 ``mods/`` 目录一一对应：每个 ``.pw.toml`` 对应一条记录，共 $total 条。")
+    $lines.Add('字段为 名称、slug、jar 文件名、前置、功能与安装端；slug 与 jar 文件名以元数据为准。')
+    $lines.Add('')
+    $lines.Add('> 分类可自行拆分与重排，工具只认 `###` 标题与表格行。')
+    $lines.Add('> 新增或删除模组后，运行 `维护模组清单.bat` 同步本文件。')
+    $lines.Add('')
+    $lines.Add("### 未分类（$total）")
+    $lines.Add('')
+    $lines.Add('| 名称 | slug | jar 文件名 | 前置 | 功能 | 端 |')
+    $lines.Add('| --- | --- | --- | --- | --- | --- |')
+
+    foreach ($m in ($Mods | Sort-Object Key)) {
+        $label = if ($m.Name) { $m.Name } else { $m.Key }
+        $slugCell = '`' + $m.Key + '`'
+        $jar = if ($m.Filename) { $m.Filename } else { '—' }
+        $side = Get-SideText $m.Side $false
+        $lines.Add(('| **{0}** | {1} | {2} | — | — | {3} |' -f $label, $slugCell, $jar, $side))
+    }
+
+    $nl = [Environment]::NewLine
+    [IO.File]::WriteAllText($DocPath, (($lines -join $nl).TrimEnd() + $nl), (New-Object Text.UTF8Encoding($false)))
+    return $DocPath
+}
+
 function Get-SuggestedSide {
     param($Proj)
     if (-not $Proj) { return $null }
@@ -269,7 +314,26 @@ Say ''
 # 1) 定位包目录: 命令行 -> 环境变量 COCO_PACK_DIR -> 工具配置.cfg -> 自动探测 -> 手工输入
 $PackDir = Resolve-PackDir -ToolRoot $ToolHome -CliValue $PackDir -NonInteractive:([bool]$All)
 if (-not $DocPath) { $DocPath = Join-Path $PackDir '模组列表介绍.md' }
-if (-not (Test-Path $DocPath)) { Fail "找不到清单文档 $DocPath"; exit 1 }
+if (-not (Test-Path $DocPath)) {
+    $allMods = @(Get-ChildItem (Join-Path $PackDir 'mods') -Filter '*.pw.toml' | ForEach-Object { Read-PwFile $_.FullName } | Sort-Object Key)
+    Head '清单文档不存在'
+    Info "路径 $DocPath"
+    Say  ("  将按 mods/ 现有的 {0} 个模组生成空白骨架: 每条含名称、slug、jar 与安装端," -f $allMods.Count)
+    Say  '  前置与功能留空, 分类统一为「未分类」, 之后可自行拆分'
+    if ($DryRun) {
+        Warn 'DryRun, 未生成文档'
+        exit 0
+    }
+    $go = $true
+    if (-not $All) {
+        $ans = Read-Host '  现在生成吗 [Y/n]'
+        if ($ans -and $ans -notmatch '^[Yy]') { Info '已取消'; exit 1 }
+    }
+    if (-not $allMods.Count) { Fail 'mods 目录里没有 .pw.toml, 无法生成骨架'; exit 1 }
+    [void](New-DocSkeleton -PackDir $PackDir -DocPath $DocPath -Mods $allMods)
+    Ok "已生成 $DocPath"
+    Say ''
+}
 Info "脚本位置 $PSScriptRoot"
 Info "包目录   $PackDir"
 Info "清单     $DocPath"
