@@ -241,14 +241,14 @@ if ($doRecord) {
 } else {
     Say ''
     Say  "[待办] 已安装 $($proj.slug), 但尚未写入清单"
-    Say  '       运行 维护模组清单.bat 补录, 或在 开发工具.bat 里选 2'
+    Say  '       运行 维护模组清单.bat 补录, 或在 开发工具.bat 里选 3'
     Say  '       未补录时文档与 mods/ 不一致, 推送前的一致性校验会拦截'
 }
 
 Say ''
 Head '下一步'
 if ($doRecord) {
-    Say  '  运行 推送元数据.bat 提交推送, 或在 开发工具.bat 里选 3'
+    Say  '  运行 推送元数据.bat 提交推送, 或在 开发工具.bat 里选 4'
 } else {
     Say  '  1. 运行 维护模组清单.bat 补录清单文档'
     Say  '  2. 运行 推送元数据.bat 提交推送'

@@ -721,3 +721,110 @@ function Get-BaselineDocSlugs {
     $result.Ok = $true
     return $result
 }
+
+# ---------------------------------------------------------------------------
+#  删除元数据: 确认 -> 备份 -> 移除 -> 刷新 -> 重算计数
+# ---------------------------------------------------------------------------
+
+function Invoke-MetadataRemove {
+    <#
+        移除一批模组的元数据
+
+        供 维护模组清单 与 删除模组 共用: 确认、备份、packwiz remove、刷新索引与重算计数
+        都在这里完成, 避免两处实现分叉。
+
+        参数
+          PackDir  包目录
+          Targets  Read-PwFile 返回的元数据对象数组
+          DocPath  清单文档路径, 删除后重算计数
+          DryRun   只打印计划
+
+        返回
+          Removed    成功移除数
+          Failed     失败数
+          BackupDir  备份目录(未确认或 DryRun 时为空)
+          DocLines   处理后的文档行
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$PackDir,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Targets,
+        [string]$DocPath,
+        [switch]$DryRun
+    )
+
+    $result = [pscustomobject]@{ Removed = 0; Failed = 0; BackupDir = ''; DocLines = @() }
+    if ($Targets.Count -eq 0) { return $result }
+    if (-not $DocPath) { $DocPath = Join-Path $PackDir '模组列表介绍.md' }
+
+    if ($DryRun) {
+        Say '  将删除以下模组的元数据:'
+        foreach ($m in $Targets) { Say ("    - {0}  ({1})" -f $m.Key, $m.Name) }
+        Warn 'DryRun: 不执行删除'
+        return $result
+    }
+
+    Say '  将删除以下模组的元数据:'
+    foreach ($m in $Targets) { Say ("    - {0}  ({1})  -> mods/{2}" -f $m.Key, $m.Name, (Split-Path $m.Path -Leaf)) }
+    Say  '  删除前会自动备份到缓存目录'
+
+    $ans = Read-Host '  确认删除吗 [y/N]'
+    if (-not $ans -or $ans -notmatch '^[Yy]') {
+        Info '未确认, 未做任何改动'
+        return $result
+    }
+
+    # 确认后才备份, 选 N 时不留下痕迹
+    $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+    $backupRoot = Join-Path $env:LOCALAPPDATA 'CocoPackwiz\backup'
+    $backupDir = Join-Path $backupRoot "删除-$stamp"
+    New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
+    $manifest = @(
+        "# 删除备份 $stamp",
+        "# 包目录 $PackDir",
+        "# 格式: slug <TAB> 名称 <TAB> 文件名",
+        ''
+    )
+    foreach ($m in $Targets) {
+        Copy-Item -LiteralPath $m.Path -Destination (Join-Path $backupDir (Split-Path $m.Path -Leaf)) -Force
+        $manifest += ("{0}`t{1}`t{2}" -f $m.Key, $m.Name, $m.Filename)
+    }
+    [IO.File]::WriteAllText((Join-Path $backupDir '清单.txt'), ($manifest -join "`r`n"), (New-Object Text.UTF8Encoding($false)))
+    Info "备份目录 $backupDir ($($Targets.Count) 个文件)"
+    $result.BackupDir = $backupDir
+
+    $packwiz = Resolve-Packwiz
+    $removed = 0
+    $failed = 0
+    foreach ($m in $Targets) {
+        $okDel = $false
+        if ($packwiz) {
+            Push-Location $PackDir
+            [void](& $packwiz remove $m.Key 2>&1)
+            if ($LASTEXITCODE -eq 0) { $okDel = $true }
+            Pop-Location
+        }
+        if (-not $okDel) {
+            # 缺少 packwiz 或 remove 失败时退化为直接删文件
+            Remove-Item -LiteralPath $m.Path -Force -ErrorAction SilentlyContinue
+            $okDel = -not (Test-Path $m.Path)
+        }
+        if ($okDel) { $removed++; Ok "已删除 $($m.Key)" } else { $failed++; Warn "删除失败 $($m.Key)" }
+    }
+
+    if (-not $packwiz -and $removed -gt 0) {
+        $pwz = Resolve-Packwiz
+        if ($pwz) { Push-Location $PackDir; [void](& $pwz refresh 2>&1); Pop-Location }
+    }
+
+    # 文档计数可能因手工删行而失真, 统一重算并写回
+    $docNow = [IO.File]::ReadAllText($DocPath, [Text.Encoding]::UTF8) -split "`r?`n"
+    $fixed = Repair-DocCounts $docNow @(Read-DocSections $docNow)
+    [IO.File]::WriteAllText($DocPath, ($fixed -join "`r`n"), (New-Object Text.UTF8Encoding($false)))
+
+    $result.Removed = $removed
+    $result.Failed = $failed
+    $result.DocLines = $fixed
+    Ok "已删除 $removed 个模组的元数据"
+    return $result
+}

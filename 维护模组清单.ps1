@@ -151,7 +151,7 @@ if ($userDeleted.Count -gt 0) {
         $label = if ($nm -and $nm.Name) { $nm.Name } else { '(无名称)' }
         Say  ("  - {0}  ({1})" -f $k, $label)
     }
-    Say  '         这些模组的元数据仍存在; 删除动作在 F8 实现, 本次仅报告, 不执行'
+    Say  '         下面会询问是否删除这些模组的元数据'
 } else {
     Info '用户删行 0 条'
 }
@@ -161,11 +161,9 @@ if ($metaGone.Count -gt 0) {
 }
 Info "文档残留 $($pureGhost.Count) 条(文档有行, 元数据从未存在)"
 
-# 2.47) 执行删除: 用户删行的模组 -> 移除元数据(含备份与确认)
+# 2.47) 执行删除: 用户删行的模组 -> 移除元数据(确认与备份见共用函数)
 if ($userDeleted.Count -gt 0) {
-    if ($DryRun) {
-        Warn 'DryRun: 不执行删除, 仅报告'
-    } elseif ($NoRemove) {
+    if ($NoRemove) {
         Info '已指定 -NoRemove, 跳过元数据删除'
     } else {
         Head '准备删除元数据'
@@ -174,72 +172,19 @@ if ($userDeleted.Count -gt 0) {
             $mm = ($mods | Where-Object { $_.Key -eq $k } | Select-Object -First 1)
             if ($mm) { $targets += $mm }
         }
-
-        Say ''
-        Say '  将删除以下模组的元数据:'
-        foreach ($mm in $targets) { Say ("    - {0}  ({1})  -> mods/{2}" -f $mm.Key, $mm.Name, (Split-Path $mm.Path -Leaf)) }
-        Say  '  删除前会自动备份到缓存目录'
-        $ans = Read-Host '  确认删除吗 [y/N]'
-        if (-not $ans -or $ans -notmatch '^[Yy]') {
-            Info '未确认, 未做任何改动'
-        } else {
-            # 确认后才备份: 选 N 时不留下任何痕迹
-            $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-            $backupRoot = Join-Path $env:LOCALAPPDATA 'CocoPackwiz\backup'
-            $backupDir = Join-Path $backupRoot "删除-$stamp"
-            New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
-            $manifest = @(
-                "# 删除备份 $stamp",
-                "# 包目录 $PackDir",
-                "# 格式: slug <TAB> 名称 <TAB> 文件名",
-                ''
-            )
-            foreach ($mm in $targets) {
-                Copy-Item -LiteralPath $mm.Path -Destination (Join-Path $backupDir (Split-Path $mm.Path -Leaf)) -Force
-                $manifest += ("{0}`t{1}`t{2}" -f $mm.Key, $mm.Name, $mm.Filename)
-            }
-            [IO.File]::WriteAllText((Join-Path $backupDir '清单.txt'), ($manifest -join "`r`n"), $Utf8NoBom)
-            Info "备份目录 $backupDir ($($targets.Count) 个文件)"
-            $packwiz = Resolve-Packwiz
-            $removed = 0
-            $failed = 0
-            foreach ($mm in $targets) {
-                $okDel = $false
-                if ($packwiz) {
-                    Push-Location $PackDir
-                    $rmOut = & $packwiz remove $mm.Key 2>&1
-                    if ($LASTEXITCODE -eq 0) { $okDel = $true }
-                    Pop-Location
-                }
-                if (-not $okDel) {
-                    # 缺少 packwiz 或 remove 失败时退化为直接删文件
-                    Remove-Item -LiteralPath $mm.Path -Force -ErrorAction SilentlyContinue
-                    $okDel = -not (Test-Path $mm.Path)
-                }
-                if ($okDel) { $removed++; Ok "已删除 $($mm.Key)" } else { $failed++; Warn "删除失败 $($mm.Key)" }
-            }
-
-            if ($removed -gt 0 -and -not $packwiz) {
-                $pwz2 = Resolve-Packwiz
-                if ($pwz2) { Push-Location $PackDir; [void](& $pwz2 refresh 2>&1); Pop-Location }
-            }
-
-            # 文档计数可能因手工删行而失真, 这里重算并写回
-            $docNow = [IO.File]::ReadAllText($DocPath, [Text.Encoding]::UTF8) -split "`r?`n"
-            $fixedDoc = Repair-DocCounts $docNow @(Read-DocSections $docNow)
-            [IO.File]::WriteAllText($DocPath, ($fixedDoc -join "`r`n"), $Utf8NoBom)
-            Ok "已删除 $removed 个模组的元数据; 文档计数已重算"
-
+        $rm = Invoke-MetadataRemove -PackDir $PackDir -Targets $targets -DocPath $DocPath -DryRun:$DryRun
+        if ($rm.Removed -gt 0) {
             # 重新读取元数据与差异, 供后续步骤使用
             $mods = @(Get-ChildItem (Join-Path $PackDir 'mods') -Filter '*.pw.toml' -ErrorAction SilentlyContinue | ForEach-Object { Read-PwFile $_.FullName } | Sort-Object Key)
             $modKeysAll = @($mods | ForEach-Object { $_.Key })
             $newMods = @($mods | Where-Object { $docKeys -notcontains $_.Key -and $baseline.Slugs -notcontains $_.Key })
-            $docLines = $fixedDoc
+            $docLines = $rm.DocLines
             $sections = @(Read-DocSections $docLines)
         }
     }
 }
 
+# 2.5) 文档里存在、但元数据已没有的条目
 # 2.5) 文档里存在、但元数据已没有的条目
 $modKeys = @($mods | ForEach-Object { $_.Key })
 $stale = @()
@@ -287,7 +232,9 @@ $synced = 0
 $newLines = New-Object System.Collections.Generic.List[string]
 foreach ($l in $docLines) {
     if ($l -notmatch '^\|\s*\*\*') { $newLines.Add($l); continue }
-    $cells = ($l -split '\|'); $cells = $cells[1..($cells.Count - 2)] | ForEach-Object { $_.Trim() }
+    $cells = ($l -split '\|')
+    if ($cells.Count -lt 4) { $newLines.Add($l); continue }
+    $cells = $cells[1..($cells.Count - 2)] | ForEach-Object { $_.Trim() }
     if ($cells.Count -lt 6) { $newLines.Add($l); continue }
     $slugCell = $cells[1]
     if ($slugCell -notmatch '[`]([A-Za-z0-9][A-Za-z0-9_\-\.]*)[`]') { $newLines.Add($l); continue }
@@ -313,7 +260,7 @@ if ($synced -gt 0) {
 } else { Info '已有条目的 jar 文件名与端均与元数据一致' }
 
 # 3) 差异
-# 排除用户删行的那批: 它们等待 F8 删除元数据, 不应被补录回文档
+# 排除用户删行的那批: 它们等待删除元数据, 不应被补录回文档
 $newMods = @($mods | Where-Object { $docKeys -notcontains $_.Key -and $baseline.Slugs -notcontains $_.Key })
 if ($newMods.Count -eq 0) {
     Ok '没有发现未记录的模组, 无需操作'
