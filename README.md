@@ -109,7 +109,8 @@ git clone -b dev https://github.com/viforiy/Coco_Minecraft_CustomModPack.git Coc
 2. 汇总新增 / 删除 / 更新的模组与其它改动文件
 3. 按变更内容生成提交信息，`git add -A` 后提交
 4. 依次尝试「当前 git 配置」「经 7890 代理」「直连无代理」推送
-5. 推送失败时保留本地提交，并给出手动推送命令
+5. 推送失败时保留本地提交；若远端拒绝原因是历史不一致，另给两条路径：先 `pull --rebase` 同步，或用 `-Force` 覆盖
+6. `-Force` 使用 `--force-with-lease`，远端若已被他人推进则不会覆盖；未加 `-NoPrompt` 时仍需确认
 
 ### 获取 PW-GUI
 

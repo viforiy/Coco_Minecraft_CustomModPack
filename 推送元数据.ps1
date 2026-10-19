@@ -21,13 +21,20 @@
 
 .PARAMETER DryRun
     只显示将要提交的内容, 不执行 add/commit/push
+
+.PARAMETER Force
+    使用 --force-with-lease 覆盖远端分支, 仅在本地重置过历史时使用
+    默认不强制; 未加 -NoPrompt 时会再次确认
 #>
 [CmdletBinding()]
 param(
     [string]$PackDir,
     [string]$Message,
     [switch]$NoPrompt,
-    [switch]$DryRun
+    [switch]$DryRun,
+
+    # 使用 --force-with-lease 覆盖远端; 需显式指定, 默认不强制
+    [switch]$Force
 )
 
 $ErrorActionPreference = 'Stop'
@@ -118,11 +125,13 @@ if (Test-Path $docPath) {
 # 3) 变更汇总
 $status = (Invoke-Git @('-c','core.quotepath=false','status','--porcelain')).Out
 $lines = @($status -split "`n" | Where-Object { $_.Trim() -ne '' })
+$skipCommit = $false
 if ($lines.Count -eq 0) {
     Ok '工作区干净, 没有需要提交的改动'
     $ahead = (Invoke-Git @('rev-list','--count','@{u}..HEAD') -AllowFail)
     if ($ahead.Code -eq 0 -and [int]$ahead.Out.Trim() -gt 0) {
-        Warn "但本地领先远端 $($ahead.Out.Trim()) 个提交, 需要推送"
+        Warn "但本地领先远端 $($ahead.Out.Trim()) 个提交, 直接进入推送环节"
+        $skipCommit = $true
     } else {
         exit 0
     }
@@ -234,20 +243,40 @@ if ($DryRun) {
 }
 
 # 5) 提交
-$msgFile = Join-Path $env:TEMP ("coco-commit-" + [guid]::NewGuid().ToString('N') + ".txt")
-[IO.File]::WriteAllText($msgFile, ($body -join "`n"), (New-Object System.Text.UTF8Encoding($false)))
-try {
-    Invoke-Git @('add','-A') | Out-Null
-    $r = Invoke-Git @('-c','i18n.commitEncoding=UTF-8','commit','-F',$msgFile) -AllowFail
-    if ($r.Code -ne 0) { Fail "提交失败:`n$($r.Out)"; exit 1 }
-    $hash = (Invoke-Git @('rev-parse','--short','HEAD')).Out.Trim()
-    Ok "已提交 $hash"
-} finally {
-    Remove-Item $msgFile -ErrorAction SilentlyContinue
+if ($skipCommit) {
+    Info '无待提交改动, 跳过提交, 只执行推送'
+} else {
+    $msgFile = Join-Path $env:TEMP ("coco-commit-" + [guid]::NewGuid().ToString('N') + ".txt")
+    [IO.File]::WriteAllText($msgFile, ($body -join "`n"), (New-Object System.Text.UTF8Encoding($false)))
+    try {
+        Invoke-Git @('add','-A') | Out-Null
+        $r = Invoke-Git @('-c','i18n.commitEncoding=UTF-8','commit','-F',$msgFile) -AllowFail
+        if ($r.Code -ne 0) { Fail "提交失败:`n$($r.Out)"; exit 1 }
+        $hash = (Invoke-Git @('rev-parse','--short','HEAD')).Out.Trim()
+        Ok "已提交 $hash"
+    } finally {
+        Remove-Item $msgFile -ErrorAction SilentlyContinue
+    }
 }
 
 # 6) 推送
-Head '推送'
+# 先只读探测远端, 落后或分叉提前告知, 避免用户等到推送被拒才看到原因
+$fetchTry = Invoke-Git @('fetch',$remoteName,'--quiet') -AllowFail
+if ($fetchTry.Code -eq 0) {
+    $behindRes = Invoke-Git @('rev-list','--count',"HEAD..$remoteName/$branch") -AllowFail
+    $aheadRes  = Invoke-Git @('rev-list','--count',"$remoteName/$branch..HEAD") -AllowFail
+    if ($behindRes.Code -eq 0 -and $aheadRes.Code -eq 0) {
+        $behind = [int]$behindRes.Out.Trim()
+        $ahead  = [int]$aheadRes.Out.Trim()
+        if ($behind -gt 0) {
+            Warn "本地落后 $remoteName/$branch $behind 个提交, 领先 $ahead 个"
+            Say  '  远端有你没有的提交, 直接推送会被拒绝'
+            Say  "  先同步再推送:  git -C ""$PackDir"" pull --rebase $remoteName $branch"
+        } else {
+            Info "本地领先 $remoteName/$branch $ahead 个提交, 可快进推送"
+        }
+    }
+}Head '推送'
 $proxy = 'http://127.0.0.1:7890'
 $remoteName = $repo.Remote
 if (-not $remoteName) {
@@ -256,13 +285,24 @@ if (-not $remoteName) {
     exit 1
 }
 $pushRef = "HEAD:$branch"
-Say "  目标 $remoteName / $branch"
+$pushExtra = @()
+if ($Force) {
+    # --force-with-lease: 只有远端仍停在我上次看到的位置时才覆盖, 比 --force 安全
+    $pushExtra = @('--force-with-lease')
+    Warn '已启用强制推送(--force-with-lease)'
+    if (-not $NoPrompt -and -not $DryRun) {
+        $ans = Read-Host '  强制推送会重写远端历史, 确认继续吗 [y/N]'
+        if (-not $ans -or $ans -notmatch '^[Yy]') { Info '已取消'; exit 1 }
+    }
+}
+Say "  目标 $remoteName / $branch$(if ($Force) { '  (强制)' } else { '' })"
 $attempts = @(
-    @{ Name = '按当前 git 配置'; Args = @('push',$remoteName,$pushRef) },
-    @{ Name = "经代理 $proxy";    Args = @('-c',"http.proxy=$proxy",'-c',"https.proxy=$proxy",'push',$remoteName,$pushRef) },
-    @{ Name = '直连无代理';       Args = @('-c','http.proxy=','-c','https.proxy=','push',$remoteName,$pushRef) }
+    @{ Name = '按当前 git 配置'; Args = (@('push') + $pushExtra + @($remoteName,$pushRef)) },
+    @{ Name = "经代理 $proxy";    Args = (@('-c',"http.proxy=$proxy",'-c',"https.proxy=$proxy",'push') + $pushExtra + @($remoteName,$pushRef)) },
+    @{ Name = '直连无代理';       Args = (@('-c','http.proxy=','-c','https.proxy=','push') + $pushExtra + @($remoteName,$pushRef)) }
 )
 $pushed = $false
+$lastOut = ''  # 最后一次失败输出, 用于区分非快进与网络问题
 foreach ($a in $attempts) {
     Info "尝试 $($a.Name)"
     $r = Invoke-Git $a.Args -AllowFail
@@ -274,14 +314,31 @@ foreach ($a in $attempts) {
     }
     $why = ($r.Out -split "`n" | Where-Object { $_ -match 'fatal|error:|denied|rejected' } | Select-Object -First 1)
     if (-not $why) { $why = ($r.Out -split "`n" | Where-Object { $_.Trim() } | Select-Object -Last 1) }
+    $lastOut = $r.Out
     Warn "失败: $($why.Trim())"
 }
 
 if (-not $pushed) {
     Fail '三次尝试均未推送成功'
-    Say '  常见原因: 代理未启动, 或网络无法访问 github.com'
-    Say '  提交已保存在本地, 网络恢复后执行:'
-    Say "    git -C ""$PackDir"" push $remoteName $pushRef"
+    if ($lastOut -match 'non-fast-forward|fetch first|\[rejected\]|failed to push') {
+        Head '远端拒绝: 本地与远端历史不一致(非快进)'
+        Say "  本地 $branch -> $((Invoke-Git @('rev-parse','--short','HEAD') -AllowFail).Out.Trim())"
+        Say "  远端 $remoteName/$branch -> $((Invoke-Git @('rev-parse','--short',"$remoteName/$branch") -AllowFail).Out.Trim())"
+        Say ''
+        Say '  情形一 远端有本地没有的提交(常见于换了机器提交):'
+        Say "    git -C ""$PackDir"" pull --rebase $remoteName $branch"
+        Say '    然后再运行推送'
+        Say ''
+        Say '  情形二 本地重置过历史, 想用本地覆盖远端:'
+        Say '    推送元数据.bat -Force'
+        Say '    使用 --force-with-lease, 远端若已被他人推进则不会覆盖'
+        Say ''
+        Warn '本次未强制推送, 以免覆盖他人提交'
+    } else {
+        Say '  常见原因: 代理未启动, 或网络无法访问远端'
+        Say '  提交已保存在本地, 网络恢复后执行:'
+        Say "    git -C ""$PackDir"" push $remoteName $pushRef"
+    }
     exit 1
 }
 
