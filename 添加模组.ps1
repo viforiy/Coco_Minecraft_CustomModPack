@@ -79,44 +79,86 @@ if (-not $meta.Minecraft -or $meta.Loaders.Count -eq 0) {
 }
 
 # 搜索并选择候选: 返回 slug, 取消或失败返回 $null
-function Select-Candidate {
-    param([string]$Query)
-
-    $installedIds = New-Object System.Collections.Generic.List[string]
-    $installedSlugs = New-Object System.Collections.Generic.List[string]
-    foreach ($f in Get-ChildItem -LiteralPath (Join-Path $PackDir 'mods') -Filter '*.pw.toml' -ErrorAction SilentlyContinue) {
-        $m0 = Read-PwFile $f.FullName
-        if ($m0.MrId) { $installedIds.Add($m0.MrId) }
-        $installedSlugs.Add($m0.Key)
-    }
-
-    $res = Get-MrSearch -Query $Query -Loaders $meta.Loaders -GameVersions @($meta.Minecraft) -Limit 10
-    if (-not $res -or -not $res.hits -or $res.hits.Count -eq 0) {
-        Warn "没有匹配「$Query」的项目"
-        Say  '  可换更短的关键词, 或直接粘贴 Modrinth 链接'
-        return $null
-    }
-
-    Info ("共 {0} 条匹配, 显示前 {1} 条(已按 MC {2} / {3} 过滤)" -f $res.total_hits, $res.hits.Count, $meta.Minecraft, ($meta.Loaders -join ','))
+function Show-Hits {
+    param($Hits, [string]$Note)
     Say ''
-    for ($i = 0; $i -lt $res.hits.Count; $i++) {
-        $h = $res.hits[$i]
+    for ($i = 0; $i -lt $Hits.Count; $i++) {
+        $h = $Hits[$i]
         $inst = ''
-        if ($installedIds.Contains([string]$h.project_id) -or $installedSlugs.Contains([string]$h.slug)) { $inst = '[已装]' }
+        if ($script:installedIds.Contains([string]$h.project_id) -or $script:installedSlugs.Contains([string]$h.slug)) { $inst = '[已装]' }
         $when = ''
         if ($h.date_modified) { $when = ([string]$h.date_modified).Substring(0, 10) }
         Say ("  {0,2}. {1} {2}" -f ($i + 1), $h.title, $inst)
         Say ("      {0,-24} 下载 {1,12}   更新 {2}" -f $h.slug, (Format-Count $h.downloads), $when)
     }
+    if ($Note) { Say ("      {0}" -f $Note) }
     Say '   0. 取消'
     Say ''
+}
+
+# 搜索并选择候选: 返回 slug; 取消或无结果返回 $null
+function Select-Candidate {
+    param([string]$Query)
+
+    $script:installedIds = New-Object System.Collections.Generic.List[string]
+    $script:installedSlugs = New-Object System.Collections.Generic.List[string]
+    foreach ($f in Get-ChildItem -LiteralPath (Join-Path $PackDir 'mods') -Filter '*.pw.toml' -ErrorAction SilentlyContinue) {
+        $m0 = Read-PwFile $f.FullName
+        if ($m0.MrId) { $script:installedIds.Add($m0.MrId) }
+        $script:installedSlugs.Add($m0.Key)
+    }
+
+    $hits = @()
+    $note = ''
+
+    # 一档: 按包的加载器与游戏版本过滤
+    $res = Get-MrSearch -Query $Query -Loaders $meta.Loaders -GameVersions @($meta.Minecraft) -Limit 10
+    if ($res -and $res.hits -and $res.hits.Count -gt 0) {
+        $hits = @($res.hits)
+        Info ("共 {0} 条匹配(已按 MC {1} / {2} 过滤)" -f $res.total_hits, $meta.Minecraft, ($meta.Loaders -join ','))
+    } else {
+        # 二档: 放宽版本与加载器, 找出「项目存在但版本不适配」的情况
+        $res2 = Get-MrSearch -Query $Query -Limit 10
+        if ($res2 -and $res2.hits -and $res2.hits.Count -gt 0) {
+            $hits = @($res2.hits)
+            Warn ("没有适配 MC {0} / {1} 的结果, 以下为全站匹配" -f $meta.Minecraft, ($meta.Loaders -join ','))
+            $note = '选择后可能提示无适配版本'
+        } else {
+            # 三档: 中文按两字片段再试一次
+            if ($Query -match '[\u4e00-\u9fa5]') {
+                $grams = @(Get-CjkGrams -Text $Query -Max 3)
+                foreach ($g in $grams) {
+                    $res3 = Get-MrSearch -Query $g -Loaders $meta.Loaders -GameVersions @($meta.Minecraft) -Limit 5
+                    if ($res3 -and $res3.hits -and $res3.hits.Count -gt 0) {
+                        $hits = @($res3.hits)
+                        Warn ("按关键词片段「$g」匹配到以下结果")
+                        $note = '片段匹配, 结果可能不相关'
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    if ($hits.Count -eq 0) {
+        Warn "没有匹配「$Query」的项目"
+        $sugg = @(Get-AliasSuggestions -PackDir $PackDir -Text $Query)
+        if ($sugg.Count -gt 0) {
+            Say  '  别名表里有相近的中文名:'
+            foreach ($sv in $sugg) { Say ("    {0,-20} -> {1}" -f $sv.Alias, $sv.Slug) }
+        }
+        Say  '  也可以直接粘贴 Modrinth 链接, 或改用英文关键词(如 create / iris)'
+        return $null
+    }
+
+    Show-Hits -Hits $hits -Note $note
     $pick = Read-Host '  选择序号'
     if (-not $pick -or $pick -match '^0+$') { Info '已取消, 未做任何改动'; return $null }
-    if ($pick -notmatch '^\d+$' -or [int]$pick -lt 1 -or [int]$pick -gt $res.hits.Count) {
+    if ($pick -notmatch '^\d+$' -or [int]$pick -lt 1 -or [int]$pick -gt $hits.Count) {
         Fail "无效的序号: $pick"
         return $null
     }
-    return [string]$res.hits[[int]$pick - 1].slug
+    return [string]$hits[[int]$pick - 1].slug
 }
 # 2) 输入
 $raw = $Target

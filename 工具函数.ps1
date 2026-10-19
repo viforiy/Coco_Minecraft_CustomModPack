@@ -877,3 +877,50 @@ function Format-Count {
     if ($null -eq $Value) { return '0' }
     return ('{0:N0}' -f [int64]$Value)
 }
+
+function Get-AliasSuggestions {
+    <#
+        按片段相似度从别名表里找相近条目
+
+        用于中文关键词搜不到时给提示: 取与查询共有的两字片段
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$PackDir,
+        [Parameter(Mandatory = $true)][string]$Text,
+        [int]$Max = 5
+    )
+
+    $table = @(Read-AliasTable $PackDir)
+    if ($table.Count -eq 0) { return @() }
+    $q = $Text.Trim()
+    if ($q.Length -lt 2) { return @() }
+
+    $grams = @()
+    for ($i = 0; $i -le $q.Length - 2; $i++) { $grams += $q.Substring($i, 2) }
+
+    $hits = @()
+    foreach ($e in $table) {
+        # 双向匹配: 别名含查询片段, 或查询里含别名(如 钠盐 里含 钠)
+        if ($e.Alias.Contains($q) -or $q.Contains($e.Alias)) { $hits += $e; continue }
+        foreach ($g in $grams) {
+            if ($e.Alias.Contains($g)) { $hits += $e; break }
+        }
+    }
+    return @($hits | Select-Object -First $Max)
+}
+
+function Get-CjkGrams {
+    <#
+        取中文查询的两字片段, 用于降级搜索
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][string]$Text, [int]$Max = 3)
+
+    $grams = New-Object System.Collections.Generic.List[string]
+    for ($i = 0; $i -le $Text.Length - 2; $i++) {
+        $g = $Text.Substring($i, 2)
+        if (-not $grams.Contains($g)) { $grams.Add($g) }
+    }
+    return @($grams | Select-Object -First $Max)
+}
