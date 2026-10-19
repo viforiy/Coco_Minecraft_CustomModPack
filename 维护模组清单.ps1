@@ -12,7 +12,7 @@
       5. 末尾重算各节计数, 可选执行 packwiz refresh
 
 .PARAMETER PackDir
-    packwiz 包目录 (pack.toml 所在层), 默认取脚本同级的 ..\Coco_Minecraft_CustomModPack
+    packwiz 包目录, 依次取 -PackDir / 环境变量 COCO_PACK_DIR / 工具配置.cfg / 自动探测
 
 .PARAMETER DocPath
     清单文档路径, 默认为 PackDir\模组列表介绍.md
@@ -44,6 +44,8 @@ param(
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(936)
 $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+$ToolHome = $PSScriptRoot
+. (Join-Path $ToolHome '工具配置.ps1')
 
 function Say    { param($m) Write-Host $m }
 function Head   { param($m) Write-Host ''; Write-Host "== $m ==" -ForegroundColor Cyan }
@@ -264,16 +266,8 @@ Say '  作用: 同步清单与 mods/ 元数据, 校正 side, 补录新条目, �
 Say '  只读模式加 -DryRun; 跳过 side 校正加 -NoSide'
 Say ''
 
-# 1) 定位包目录
-if (-not $PackDir) {
-    $guess = Join-Path (Split-Path -Parent $PSScriptRoot) 'Coco_Minecraft_CustomModPack'
-    if (Test-Path (Join-Path $guess 'pack.toml')) { $PackDir = $guess }
-}
-while (-not $PackDir -or -not (Test-Path (Join-Path $PackDir 'pack.toml'))) {
-    $PackDir = Read-Host '  packwiz 包目录 (含 pack.toml)'
-    if ($PackDir) { $PackDir = $PackDir.Trim('"').TrimEnd('\') }
-}
-$PackDir = (Resolve-Path $PackDir).Path
+# 1) 定位包目录: 命令行 -> 环境变量 COCO_PACK_DIR -> 工具配置.cfg -> 自动探测 -> 手工输入
+$PackDir = Resolve-PackDir -ToolRoot $ToolHome -CliValue $PackDir -NonInteractive:([bool]$All)
 if (-not $DocPath) { $DocPath = Join-Path $PackDir '模组列表介绍.md' }
 if (-not (Test-Path $DocPath)) { Fail "找不到清单文档 $DocPath"; exit 1 }
 Info "脚本位置 $PSScriptRoot"

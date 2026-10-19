@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
-    提交并推送 main 分支的模组元数据
+    提交并推送当前分支的模组元数据
 
 .DESCRIPTION
     1. 检查目标目录是否为 git 仓库, 分支是否为 main
@@ -32,6 +32,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(936)
+$ToolHome = $PSScriptRoot
+. (Join-Path $ToolHome '工具配置.ps1')
 
 function Say  { param($m) Write-Host $m }
 function Head { param($m) Write-Host ''; Write-Host "== $m ==" -ForegroundColor Cyan }
@@ -65,26 +67,24 @@ Say ''
 Say '=========================================================='
 Say '  Coco 整合包 · 元数据推送'
 Say '=========================================================='
-Say '  提交并推送 main 分支, 玩家与服务端下次启动即同步'
+Say '  提交并推送当前分支, 玩家与服务端下次启动即同步'
 Say ''
 
 # 1) 定位仓库
-if (-not $PackDir) {
-    $guess = Join-Path (Split-Path -Parent $PSScriptRoot) 'Coco_Minecraft_CustomModPack'
-    if (Test-Path (Join-Path $guess '.git')) { $PackDir = $guess }
-}
-while (-not $PackDir -or -not (Test-Path (Join-Path $PackDir '.git'))) {
-    $PackDir = Read-Host '  元数据仓库目录 (含 .git 与 pack.toml)'
-    if ($PackDir) { $PackDir = $PackDir.Trim('"').TrimEnd('\') }
-}
-$PackDir = (Resolve-Path $PackDir).Path
-Info "仓库 $PackDir"
+$PackDir = Resolve-PackDir -ToolRoot $ToolHome -CliValue $PackDir -NonInteractive:([bool]$NoPrompt)
+if (-not (Test-Path (Join-Path $PackDir '.git'))) { Fail "目录不是 git 仓库: $PackDir"; exit 1 }
+$cfg = Read-ToolConfig $ToolHome
+$repo = Get-RepoInfo -PackDir $PackDir -PreferredRemote $cfg['REMOTE']
+Info "仓库     $PackDir"
+Info "当前分支 $($repo.Branch)$(if ($repo.Upstream) { "  ->  $($repo.Upstream)" } else { '  (尚未设置上游)' })"
+if ($repo.Remotes.Count -gt 0) { Info "远端     $($repo.Remotes -join ', ')" } else { Warn '该仓库没有配置远端, 只能本地提交' }
 
 # 2) 分支与上游
-$branch = (Invoke-Git @('rev-parse','--abbrev-ref','HEAD')).Out.Trim()
-if ($branch -ne 'main') {
-    Warn "当前分支为 $branch, 推送到远端的是该分支同名远端引用"
-    if (-not $NoPrompt) {
+$branch = $repo.Branch
+$expected = if ($repo.DefaultBranch) { $repo.DefaultBranch } else { $branch }
+if ($branch -ne $expected) {
+    Warn "当前分支 $branch 与远端默认分支 $expected 不同, 玩家从默认分支获取不到本次改动"
+    if (-not $NoPrompt -and -not $DryRun) {
         $ans = Read-Host '  仍要继续吗 [y/N]'
         if (-not $ans -or $ans -notmatch '^[Yy]') { Info '已取消'; exit 1 }
     }
@@ -120,6 +120,13 @@ foreach ($l in $lines) {
     }
 }
 
+$classified = $addedMods.Count + $deletedMods.Count + $modChanged.Count + $otherFiles.Count
+if ($classified -eq 0) {
+    # 常见于 git 只输出了警告行, 例如换行符转换提示
+    Warn '未能识别的改动, 原始输出如下:'
+    foreach ($l in $lines) { Say "  $l" }
+}
+
 Head '变更汇总'
 if ($addedMods.Count)   { Say ("  新增模组 {0}: {1}" -f $addedMods.Count,   ($addedMods   -join ', ')) }
 if ($deletedMods.Count) { Say ("  删除模组 {0}: {1}" -f $deletedMods.Count, ($deletedMods -join ', ')) }
@@ -152,7 +159,7 @@ if ($deletedMods.Count) { $body.Add('删除: ' + ($deletedMods -join ', ')) }
 if ($modChanged.Count)  { $body.Add('更新: ' + ($modChanged -join ', ')) }
 if ($otherFiles.Count)  { $body.Add('其它: ' + ($otherFiles -join ', ')) }
 $body.Add('')
-$body.Add('由 tools/dev 分支的 推送元数据.bat 生成')
+$body.Add('由 推送元数据.bat 生成')
 
 if ($DryRun) {
     Head 'DryRun: 提交信息预览'
@@ -182,10 +189,18 @@ try {
 # 6) 推送
 Head '推送'
 $proxy = 'http://127.0.0.1:7890'
+$remoteName = $repo.Remote
+if (-not $remoteName) {
+    Fail '仓库没有配置任何远端, 只能保留本地提交'
+    Say "  先添加远端再重试:  git -C ""$PackDir"" remote add origin <仓库地址>"
+    exit 1
+}
+$pushRef = "HEAD:$branch"
+Say "  目标 $remoteName / $branch"
 $attempts = @(
-    @{ Name = '按当前 git 配置'; Args = @('push','origin','HEAD') },
-    @{ Name = "经代理 $proxy";    Args = @('-c',"http.proxy=$proxy",'-c',"https.proxy=$proxy",'push','origin','HEAD') },
-    @{ Name = '直连无代理';       Args = @('-c','http.proxy=','-c','https.proxy=','push','origin','HEAD') }
+    @{ Name = '按当前 git 配置'; Args = @('push',$remoteName,$pushRef) },
+    @{ Name = "经代理 $proxy";    Args = @('-c',"http.proxy=$proxy",'-c',"https.proxy=$proxy",'push',$remoteName,$pushRef) },
+    @{ Name = '直连无代理';       Args = @('-c','http.proxy=','-c','https.proxy=','push',$remoteName,$pushRef) }
 )
 $pushed = $false
 foreach ($a in $attempts) {
@@ -206,13 +221,15 @@ if (-not $pushed) {
     Fail '三次尝试均未推送成功'
     Say '  常见原因: 代理未启动, 或网络无法访问 github.com'
     Say '  提交已保存在本地, 网络恢复后执行:'
-    Say "    git -C ""$PackDir"" push origin HEAD"
+    Say "    git -C ""$PackDir"" push $remoteName $pushRef"
     exit 1
 }
 
 Head '结果'
-$remote = (Invoke-Git @('rev-parse','--abbrev-ref','--symbolic-full-name','@{u}') -AllowFail).Out.Trim()
-Say "  分支 $branch  ->  $remote"
+Say "  分支 $branch  ->  $remoteName/$branch"
+if ($repo.DefaultBranch -and $repo.DefaultBranch -ne $branch) {
+    Warn "远端默认分支是 $($repo.DefaultBranch), 玩家默认拉取不到 $branch"
+}
 Say '  玩家客户端与服务端将在下次启动时按差异同步 mods'
 Say '  注意 元数据仓改动后无需重新打包, 也无需通知玩家手动操作'
 Say ''

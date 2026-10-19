@@ -33,7 +33,7 @@ if not "%RC%"=="0" goto :failed
 rem 结束前询问是否推送, 直接回车即推送
 echo.
 set "_PUSH="
-set /p "_PUSH=要现在提交并推送 main 分支吗 [Y/n] : "
+set /p "_PUSH=要现在提交并推送元数据仓吗 [Y/n] : "
 if /i "%_PUSH%"=="n" goto :skipped
 if /i "%_PUSH%"=="no" goto :skipped
 
