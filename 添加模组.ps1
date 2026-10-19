@@ -39,6 +39,9 @@ param(
     # 按关键词搜索候选, 从结果中选择后录入
     [string]$Search,
 
+    # 批量导入: 文件每行一个 slug 或链接
+    [string]$Batch,
+
     [string]$PackDir,
     [string]$Proxy,
 
@@ -160,6 +163,35 @@ function Select-Candidate {
     }
     return [string]$hits[[int]$pick - 1].slug
 }
+# 1.4) 批量导入: 逐行录入, 跳过已装, 汇总结果
+if ($Batch) {
+    if (-not (Test-Path $Batch)) { Fail "找不到列表文件: $Batch"; exit 1 }
+    $items = @([IO.File]::ReadAllLines($Batch, [Text.Encoding]::UTF8) | ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') })
+    Head "批量导入 $($items.Count) 项"
+    $have = @{}
+    foreach ($f in Get-ChildItem -LiteralPath (Join-Path $PackDir 'mods') -Filter '*.pw.toml' -ErrorAction SilentlyContinue) {
+        $m0 = Read-PwFile $f.FullName; $have[$m0.Key] = $true; if ($m0.MrId) { $have[$m0.MrId] = $true }
+    }
+    $okN = 0; $skipN = 0; $badN = 0
+    foreach ($it in $items) {
+        $k = ConvertTo-MrSlug -InputText $it
+        if ($it -match '[\u4e00-\u9fa5]') { $a = Resolve-Alias -PackDir $PackDir -Text $it; if ($a) { $k = $a } }
+        if ($have.ContainsKey($k)) { $skipN++; Say "  跳过 $k (已在包内)"; continue }
+        $pj = Get-MrProject -IdOrSlug $k
+        if (-not $pj) { $badN++; Say "  失败 $k (无法解析)"; continue }
+        $vs = @(Get-MrProjectVersions -Id $pj.id -Loaders $meta.Loaders -GameVersions @($meta.Minecraft))
+        if ($vs.Count -eq 0) { $badN++; Say "  失败 $k (无适配版本)"; continue }
+        $pk = Select-PreferredVersion -Versions $vs
+        $rr = Invoke-PackwizAdd -PackDir $PackDir -ProjectId $pj.id -VersionId $pk.id
+        if ($rr.Ok) { $okN++; $have[$pj.slug] = $true; Say "  成功 $($pj.slug) ($($pk.version_number))" }
+        else { $badN++; Say "  失败 $k (packwiz 报错)" }
+    }
+    Say ''
+    Ok ("批量完成: 成功 $okN / 跳过 $skipN / 失败 $badN")
+    Say '  清单文档需运行 维护模组清单.bat 补录'
+    exit $(if ($badN -gt 0) { 1 } else { 0 })
+}
+
 # 2) 输入
 $raw = $Target
 if (-not $raw) { $raw = Read-Host '  请输入 Modrinth 链接 / slug / 项目 ID / 关键词' }
