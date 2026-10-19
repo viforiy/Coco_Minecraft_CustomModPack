@@ -104,7 +104,7 @@ if ($DryRun) { Warn 'DryRun 模式, 不会写入任何文件' }
 # 2) 读元数据与文档
 $mods = @(Get-ChildItem (Join-Path $PackDir 'mods') -Filter '*.pw.toml' | ForEach-Object { Read-PwFile $_.FullName } | Sort-Object Key)
 $docLines = [IO.File]::ReadAllText($DocPath, [Text.Encoding]::UTF8) -split "`r?`n"
-$sections = Read-DocSections $docLines
+$sections = @(Read-DocSections $docLines)
 $docKeys = @(Get-DocSlugs -DocPath $DocPath)
 Info ("元数据 {0} 个, 文档记录 {1} 个" -f $mods.Count, $docKeys.Count)
 
@@ -138,7 +138,7 @@ if ($stale.Count -gt 0) {
             if (-not $drop) { $keep.Add($l) }
         }
         $docLines = $keep.ToArray()
-        $sections = Read-DocSections $docLines
+        $sections = @(Read-DocSections $docLines)
         if (-not $DryRun) {
             $fixed = Repair-DocCounts $docLines $sections
             [IO.File]::WriteAllText($DocPath, ($fixed -join "`r`n"), $Utf8NoBom)
@@ -174,7 +174,7 @@ if ($synced -gt 0) {
     Info "同步 $synced 行的 jar 文件名与安装端 (按元数据)"
     $docLines = $newLines.ToArray()
     if (-not $DryRun) {
-        $fixed = Repair-DocCounts $docLines (Read-DocSections $docLines)
+        $fixed = Repair-DocCounts $docLines @(Read-DocSections $docLines)
         [IO.File]::WriteAllText($DocPath, ($fixed -join "`r`n"), $Utf8NoBom)
         $docLines = $fixed
     }
@@ -203,86 +203,17 @@ if (-not $All) {
     if ($go -and $go -notmatch '^[Yy]') { Info '已取消'; exit 0 }
 }
 
-# 4) 逐个处理
+# 4) 逐个处理: 单条录入逻辑见 工具函数.ps1 的 Invoke-ModEntry
 $newRows = @{}
 $sideChanged = 0
-$skipped = 0
 foreach ($m in $newMods) {
-    Head ("[$($m.Key)]  " + $(if ($m.Name) { $m.Name } else { '(无名称)' }))
-
-    $proj = $null
-    if ($m.MrId) { $proj = Get-MrProject $m.MrId }
-    if (-not $proj -and $m.Key) { $proj = Get-MrProject $m.Key }
-
-    $suggest = $null
-    if ($proj) {
-        Info ("Modrinth: client={0} server={1}" -f $proj.client_side, $proj.server_side)
-        $suggest = Get-SuggestedSide $proj
-    } else {
-        Warn '拿不到 Modrinth 信息, 需要人工判断端'
-    }
-
-    # side 校正
-    $finalSide = $m.Side
-    if (-not $NoSide) {
-        $want = if ($suggest) { $suggest } else { $m.Side }
-        if ($suggest -and $suggest -ne $m.Side) {
-            $ans = Read-Host ("  当前 side={0}, 按 API 建议改为 {1}? [Y/n]" -f $m.Side, $suggest)
-            if (-not $ans -or $ans -match '^[Yy]') { $want = $suggest }
-            else { $want = Read-Host '  那你要设成什么 (client/server/both)' }
-        }
-        $want = $want.Trim().ToLower()
-        if ($want -notin @('client', 'server', 'both')) { $want = $m.Side }
-        if ($want -and $want -ne $m.Side) {
-            $changed = Set-PwSide $m.Path $want
-            if ($changed) { $sideChanged++; Ok "side 已改为 $want"; $finalSide = $want }
-        } else { $finalSide = $m.Side }
-    }
-
-    # 依赖
-    $deps = @()
-    if ($m.MrVersion) { $deps = Get-RequiredDeps $m }
-    $depText = if ($deps.Count -gt 0) { ($deps -join '、') } else { '' }
-    if ($depText) { Info "前置(Modrinth required): $depText" } else { Info '前置: 未取到, 可留空' }
-    $depInput = Read-Host ("  前置 [回车沿用: {0}]" -f $(if ($depText) { $depText } else { '—' }))
-    if ($depInput) { $depText = $depInput }
-
-    # 中文名
-    $cnFull = if ($m.Name) { $m.Name } else { $m.Key }
-    $cn = Read-Host ("  中文名 [回车留空, 英文名会自动带上: {0}]" -f $cnFull)
-
-    # 分类
-    Say ''
-    Say '  选择分类 (顺序取自清单文档, 括号内为现有条目数):'
-    for ($k = 0; $k -lt $sections.Count; $k++) {
-        $sc = $sections[$k]
-        $cnt = if ($sc.RowStart -ge 0) { $sc.RowEnd - $sc.RowStart + 1 } else { 0 }
-        Say ("    {0,2}. {1} ({2})" -f ($k + 1), $sc.Title, $cnt)
-    }
-    Say ("    {0,2}. 新建分类" -f ($sections.Count + 1))
-    $pick = Read-Host '  序号'
-    if (-not $pick) { $pick = '1' }
-    $cat = $null
-    if ($pick -match '^\d+$' -and [int]$pick -ge 1 -and [int]$pick -le $sections.Count) {
-        $cat = $sections[[int]$pick - 1].Title
-    } else {
-        $cat = Read-Host '  新分类名称'
-        if (-not $cat) { $cat = '未分类' }
-        # 追加一个空节到文档末尾
-        $docLines += ''
-        $docLines += '### ' + $cat
-        $docLines += ''
-        $sections = Read-DocSections $docLines
-    }
-
-    # 功能描述
-    $desc = Read-Host '  功能描述 (一句话)'
-
-    $row = New-DocRow $m $cn $depText $desc (Get-SideText $finalSide $false)
-    if (-not $newRows.ContainsKey($cat)) { $newRows[$cat] = @() }
-    $newRows[$cat] += $row
-    Ok "已加入分类: $cat"
+    $entry = Invoke-ModEntry -Mod $m -Sections $sections -DocLines $docLines -NoSide:$NoSide -DryRun:$DryRun
+    $docLines = $entry.DocLines
+    if ($entry.SideChanged) { $sideChanged++ }
+    if (-not $newRows.ContainsKey($entry.Category)) { $newRows[$entry.Category] = @() }
+    $newRows[$entry.Category] += $entry.Row
 }
+if ($sideChanged -gt 0) { $sections = @(Read-DocSections $docLines) }
 
 if ($newRows.Count -eq 0) { Warn '没有新增任何条目'; exit 0 }
 

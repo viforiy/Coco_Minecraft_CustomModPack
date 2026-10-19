@@ -19,6 +19,9 @@
 .PARAMETER PackDir
     packwiz 包目录, 解析顺序与其它工具一致
 
+.PARAMETER NoPrompt
+    装完不询问是否补录, 直接打印待办事项
+
 .PARAMETER DryRun
     只解析与检查, 打印将要执行的 packwiz 命令, 不写任何文件
 
@@ -32,6 +35,10 @@ param(
 
     [string]$PackDir,
     [string]$Proxy,
+
+    # 跳过补录询问, 只打印待办
+    [switch]$NoPrompt,
+
     [switch]$DryRun
 )
 
@@ -185,9 +192,48 @@ if (Test-Path $target) {
     exit 1
 }
 
+# 9) 询问是否立即补录: 直接调用共用函数, 不再起子进程
+Say ''
+$docPath = Join-Path $PackDir '模组列表介绍.md'
+$doRecord = $false
+
+if (-not (Test-Path $docPath)) {
+    Warn '未找到清单文档, 跳过补录'
+} elseif ($NoPrompt) {
+    Info '已指定 -NoPrompt, 跳过补录询问'
+} else {
+    $ans = Read-Host '  现在补录到清单文档吗 [Y/n]'
+    if (-not $ans -or $ans -match '^[Yy]') { $doRecord = $true }
+}
+
+if ($doRecord) {
+    Head '补录清单'
+    $docLines = [IO.File]::ReadAllText($docPath, [Text.Encoding]::UTF8) -split "`r?`n"
+    $sections = @(Read-DocSections $docLines)
+    $entry = Invoke-ModEntry -Mod $newMod -Sections $sections -DocLines $docLines
+    $rows = @{}
+    $rows[$entry.Category] = @($entry.Row)
+    [void](Save-DocWithRows $docPath $entry.DocLines $sections $rows)
+    if ($entry.DocLines.Count -ne $docLines.Count) {
+        # 新建了分类, 节列表已变, 保存时按最新节重算
+        $sections2 = @(Read-DocSections $entry.DocLines)
+        [void](Save-DocWithRows $docPath $entry.DocLines $sections2 $rows)
+    }
+    Ok '补录完成'
+} else {
+    Say ''
+    Say  "[待办] 已安装 $($proj.slug), 但尚未写入清单"
+    Say  '       运行 维护模组清单.bat 补录, 或在 开发工具.bat 里选 2'
+    Say  '       未补录时文档与 mods/ 不一致, 推送前的一致性校验会拦截'
+}
+
 Say ''
 Head '下一步'
-Say  '  1. 运行 维护模组清单.bat 补录到清单文档(会询问中文名、分类与功能)'
-Say  '  2. 运行 推送元数据.bat 提交推送'
+if ($doRecord) {
+    Say  '  运行 推送元数据.bat 提交推送, 或在 开发工具.bat 里选 3'
+} else {
+    Say  '  1. 运行 维护模组清单.bat 补录清单文档'
+    Say  '  2. 运行 推送元数据.bat 提交推送'
+}
 Say ''
 Ok '添加流程结束'

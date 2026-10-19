@@ -111,7 +111,8 @@ function Read-PwFile {
 }
 
 function Set-PwSide {
-    param([string]$Path, [string]$Side)
+    [CmdletBinding()]
+    param([string]$Path, [string]$Side, [switch]$DryRun)
     $text = [IO.File]::ReadAllText($Path, [Text.Encoding]::UTF8)
     if ($text -match '(?m)^side\s*=\s*"[^"]*"') {
         $new = [regex]::Replace($text, '(?m)^side\s*=\s*"[^"]*"', ('side = "' + $Side + '"'))
@@ -147,7 +148,7 @@ function Read-DocSections {
             $cur.RowEnd = $i
         }
     }
-    return $list
+    return $list.ToArray()
 }
 
 function Get-DocSlugs {
@@ -210,7 +211,7 @@ function Save-DocWithRows {
     }
 
     # 重算每节计数
-    $arr = Repair-DocCounts $work.ToArray() (Read-DocSections $work.ToArray())
+    $arr = Repair-DocCounts $work.ToArray() @(Read-DocSections $work.ToArray())
 
     if (-not $DryRun) { [IO.File]::WriteAllText($Path, ($arr -join "`r`n"), $Utf8NoBom) }
     return $arr
@@ -416,4 +417,102 @@ function ConvertTo-MrSlug {
         return $Matches[1].Trim()
     }
     return $text
+}
+
+function Invoke-ModEntry {
+    <#
+        交互录入单个模组的清单行
+
+        供 维护模组清单 与 添加模组 共用: 校正 side、取前置、录中文名/分类/功能,
+        返回分类与行文本; 新建分类时会向 DocLines 追加空节并回传最新节列表。
+
+        参数
+          Mod       Read-PwFile 返回的元数据对象
+          Sections  当前文档的节列表
+          DocLines  文档行数组, 新建分类时可能被追加
+          NoSide    跳过 side 校正
+          DryRun    DryRun 时不写 .pw.toml
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]$Mod,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][object[]]$Sections,
+        [Parameter(Mandatory = $true)][AllowEmptyCollection()][AllowEmptyString()][string[]]$DocLines,
+        [switch]$NoSide,
+        [switch]$DryRun
+    )
+
+    Head ("[$($Mod.Key)]  " + $(if ($Mod.Name) { $Mod.Name } else { '(无名称)' }))
+
+    $proj = $null
+    if ($Mod.MrId) { $proj = Get-MrProject $Mod.MrId }
+    if (-not $proj -and $Mod.Key) { $proj = Get-MrProject $Mod.Key }
+
+    $suggest = $null
+    if ($proj) {
+        Info ("Modrinth: client={0} server={1}" -f $proj.client_side, $proj.server_side)
+        $suggest = Get-SuggestedSide $proj
+    } else {
+        Warn '拿不到 Modrinth 信息, 需要人工判断端'
+    }
+
+    $finalSide = $Mod.Side
+    $sideChanged = $false
+    if (-not $NoSide) {
+        $want = if ($suggest) { $suggest } else { $Mod.Side }
+        if ($suggest -and $suggest -ne $Mod.Side) {
+            $ans = Read-Host ("  当前 side={0}, 按 API 建议改为 {1}? [Y/n]" -f $Mod.Side, $suggest)
+            if (-not $ans -or $ans -match '^[Yy]') { $want = $suggest }
+            else { $want = Read-Host '  那你要设成什么 (client/server/both)' }
+        }
+        $want = $want.Trim().ToLower()
+        if ($want -notin @('client', 'server', 'both')) { $want = $Mod.Side }
+        if ($want -and $want -ne $Mod.Side) {
+            if (Set-PwSide $Mod.Path $want -DryRun:$DryRun) { $sideChanged = $true; $finalSide = $want; Ok "side 已改为 $want" }
+        }
+    }
+
+    $deps = @()
+    if ($Mod.MrVersion) { $deps = Get-RequiredDeps $Mod }
+    $depText = if ($deps.Count -gt 0) { ($deps -join '、') } else { '' }
+    if ($depText) { Info "前置(Modrinth required): $depText" } else { Info '前置: 未取到, 可留空' }
+    $depInput = Read-Host ("  前置 [回车沿用: {0}]" -f $(if ($depText) { $depText } else { '—' }))
+    if ($depInput) { $depText = $depInput }
+
+    $cnFull = if ($Mod.Name) { $Mod.Name } else { $Mod.Key }
+    $cn = Read-Host ("  中文名 [回车留空, 英文名会自动带上: {0}]" -f $cnFull)
+
+    Say ''
+    Say '  选择分类 (顺序取自清单文档, 括号内为现有条目数):'
+    for ($k = 0; $k -lt $Sections.Count; $k++) {
+        $sc = $Sections[$k]
+        $cnt = if ($sc.RowStart -ge 0) { $sc.RowEnd - $sc.RowStart + 1 } else { 0 }
+        Say ("    {0,2}. {1} ({2})" -f ($k + 1), $sc.Title, $cnt)
+    }
+    Say ("    {0,2}. 新建分类" -f ($Sections.Count + 1))
+    $pick = Read-Host '  序号'
+    if (-not $pick) { $pick = '1' }
+
+    $cat = $null
+    $lines = @($DocLines)
+    if ($pick -match '^\d+$' -and [int]$pick -ge 1 -and [int]$pick -le $Sections.Count) {
+        $cat = $Sections[[int]$pick - 1].Title
+    } else {
+        $cat = Read-Host '  新分类名称'
+        if (-not $cat) { $cat = '未分类' }
+        $lines = $lines + @('', ('### ' + $cat), '')
+    }
+
+    $desc = Read-Host '  功能描述 (一句话)'
+
+    $row = New-DocRow $Mod $cn $depText $desc (Get-SideText $finalSide $false)
+    Ok "已加入分类: $cat"
+
+    return [pscustomobject]@{
+        Category    = $cat
+        Row         = $row
+        DocLines    = $lines
+        Side        = $finalSide
+        SideChanged = $sideChanged
+    }
 }

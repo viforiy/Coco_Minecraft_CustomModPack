@@ -84,6 +84,8 @@ git clone -b dev https://github.com/viforiy/Coco_Minecraft_CustomModPack.git Coc
 
 退出码约定：`0` 成功，`1` 失败（无法解析、无适配版本、packwiz 报错），`2` 已在包内无需改动。
 
+装完会询问是否立即补录清单文档。选是则当场录入中文名、分类与功能描述，写入由共用函数完成，与同步工具同一份实现；选否或加 `-NoPrompt` 时打印待办事项。
+
 ### 维护模组清单
 
 ```bat
