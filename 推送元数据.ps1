@@ -34,13 +34,8 @@ $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = [System.Text.Encoding]::GetEncoding(936)
 $ToolHome = $PSScriptRoot
 . (Join-Path $ToolHome '工具配置.ps1')
+. (Join-Path $ToolHome '工具函数.ps1')
 
-function Say  { param($m) Write-Host $m }
-function Head { param($m) Write-Host ''; Write-Host "== $m ==" -ForegroundColor Cyan }
-function Ok   { param($m) Write-Host "[完成] $m" -ForegroundColor Green }
-function Info { param($m) Write-Host "[信息] $m" -ForegroundColor Gray }
-function Warn { param($m) Write-Host "[注意] $m" -ForegroundColor Yellow }
-function Fail { param($m) Write-Host "[错误] $m" -ForegroundColor Red }
 
 $Git = 'git'
 
