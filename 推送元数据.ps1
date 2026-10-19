@@ -115,7 +115,8 @@ if (Test-Path $docPath) {
     Info '无清单文档, 跳过一致性校验'
 }
 
-# 3) 变更汇总$status = (Invoke-Git @('-c','core.quotepath=false','status','--porcelain')).Out
+# 3) 变更汇总
+$status = (Invoke-Git @('-c','core.quotepath=false','status','--porcelain')).Out
 $lines = @($status -split "`n" | Where-Object { $_.Trim() -ne '' })
 if ($lines.Count -eq 0) {
     Ok '工作区干净, 没有需要提交的改动'
