@@ -191,6 +191,8 @@ if ($Check) {
             if (-not $tk -or $tk -eq '—' -or $tk -eq '---') { continue }
             # 内置/外部依赖不在 mods 目录, 视为已知例外
             if ($tk -match '内置|外部') { continue }
+            # 已知内置库: 随宿主模组一起分发, 不会出现在 mods 目录
+            if ($tk -match '(?i)^(ponder|biolith|mixinsquared|flywheel|xaerolib|whitenoise|apollib|worldmesher|lithium)$') { continue }
             # 去掉「前置库」「前置」「配置库」这类后缀再比对
             $tkNorm = ($tk -replace '(前置库|前置|配置格式库|配置库|核心库|内嵌浏览器框架|物品管理器)$', '').Trim()
             $hit = $nameIndex[$tk.ToLower()]
