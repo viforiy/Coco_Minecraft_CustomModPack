@@ -7,7 +7,7 @@ metafile = true
 
 [[files]]
 file = "mods/advanced-core-info.pw.toml"
-hash = "cbfc73f25ec2b0e4063ac5d1c44299559ef84c123289af5f27d331e4316543f3"
+hash = "f775c1801ced53810ea696b5fc603b5ca073153de3ad3ca52bf7942dcaf30f32"
 metafile = true
 
 [[files]]
@@ -102,7 +102,7 @@ metafile = true
 
 [[files]]
 file = "mods/biomespy.pw.toml"
-hash = "348002b63a386bc1e8e2625c25ead96c6030f36b38634560c60e76a81576e09c"
+hash = "45cd62c89a6582119da9f72542a4f2453f491bb5e6288bf9bda1b5d39179e351"
 metafile = true
 
 [[files]]
@@ -117,7 +117,7 @@ metafile = true
 
 [[files]]
 file = "mods/bookshelf-lib.pw.toml"
-hash = "3c48ad3a52e2ceae4d7e7b09f90b632e233fa78d4280e263b81a36bed555bfb5"
+hash = "68d6016fa3707c434b3aca5db041c7518c70feb53d0183faa2502cc6efd4c827"
 metafile = true
 
 [[files]]
@@ -732,7 +732,7 @@ metafile = true
 
 [[files]]
 file = "mods/prickle.pw.toml"
-hash = "4c3ae8d66598407880f171303e0790d2c30c0cd10804022ea0407059cfd95992"
+hash = "c99c5bac469e8d6ece5aae80f08635e3bbb8367f0c586b6288573c725faefe69"
 metafile = true
 
 [[files]]
@@ -852,7 +852,7 @@ metafile = true
 
 [[files]]
 file = "mods/sophisticated-jei-index.pw.toml"
-hash = "55877e948f9f4057e2d0c2cb8aa218977a0d31bad897a6d76a807cf3e3875390"
+hash = "ebc74eb4874342ec75a7eead3adfa57c891bfdc225d9a72dc1c97a39517c3a9b"
 metafile = true
 
 [[files]]
@@ -992,10 +992,14 @@ metafile = true
 
 [[files]]
 file = "mods/yungs-api.pw.toml"
-hash = "66b946cd250fe7f838a9b53d43c4c9fada7dd125849746afee609e842d0bcfe1"
+hash = "dde31f05114c72cb2f58e522417487730b872e456f77fdd02c032c9235791f6c"
 metafile = true
 
 [[files]]
 file = "mods/zeta.pw.toml"
 hash = "cb474b6c0dde741836ed4f796f3b6ab0b9d3cdc0453e651122cd002d5d1f8df8"
 metafile = true
+
+[[files]]
+file = "别名表.cfg"
+hash = "428054ef71f00bccb330df96d565cfccabef9589f52077db9ad94caa581411d1"

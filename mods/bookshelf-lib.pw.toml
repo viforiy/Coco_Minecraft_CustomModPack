@@ -1,6 +1,6 @@
 name = "Bookshelf"
 filename = "bookshelf-neoforge-1.21.1-21.1.81.jar"
-side = "client"
+side = "both"
 
 [download]
 url = "https://cdn.modrinth.com/data/uy4Cnpcm/versions/1sdJl7J1/bookshelf-neoforge-1.21.1-21.1.81.jar"

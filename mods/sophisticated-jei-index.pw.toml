@@ -1,6 +1,6 @@
 name = "Sophisticated JEI Index"
 filename = "sophisticated_jei_index-1.2.4+1.21.1.jar"
-side = "client"
+side = "both"
 
 [download]
 url = "https://cdn.modrinth.com/data/u7Rbf90L/versions/D9N5WqWP/sophisticated_jei_index-1.2.4%2B1.21.1.jar"
