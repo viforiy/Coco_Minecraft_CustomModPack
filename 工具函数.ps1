@@ -658,3 +658,66 @@ function Resolve-Alias {
     if ($loose.Count -eq 1) { return $loose[0].Slug }
     return $null
 }
+
+# ---------------------------------------------------------------------------
+#  基线: HEAD 里的清单文档
+# ---------------------------------------------------------------------------
+
+function Get-SlugsFromLines {
+    <#
+        从文档行数组中提取表格行的 slug(去重, 保持出现顺序)
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory = $true)][AllowEmptyCollection()][AllowEmptyString()][string[]]$Lines)
+
+    $out = New-Object System.Collections.Generic.List[string]
+    foreach ($l in $Lines) {
+        if ($l -notmatch '^\|') { continue }
+        foreach ($mm in [regex]::Matches($l, '[`]([A-Za-z0-9][A-Za-z0-9_\-\.]*)[`]')) {
+            $k = $mm.Groups[1].Value
+            if (-not $out.Contains($k)) { $out.Add($k) }
+        }
+    }
+    return $out.ToArray()
+}
+
+function Get-BaselineDocSlugs {
+    <#
+        读取 HEAD 版本清单文档中的 slug 集合, 作为删除判定的基线
+
+        返回对象:
+          Ok     是否取到基线(仓库无提交或文档未跟踪时为 false)
+          Slugs  基线 slug 数组
+          Reason 失败原因, 用于输出
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)][string]$PackDir,
+        [Parameter(Mandatory = $true)][string]$DocPath
+    )
+
+    $result = [pscustomobject]@{ Ok = $false; Slugs = @(); Reason = '' }
+    $rel = [IO.Path]::GetFileName($DocPath)
+
+    $prev = $ErrorActionPreference
+    $prevOut = [Console]::OutputEncoding
+    $ErrorActionPreference = 'Continue'
+    try {
+        [Console]::OutputEncoding = [Text.Encoding]::UTF8
+        $raw = & git -C $PackDir show "HEAD:$rel" 2>&1
+        $code = $LASTEXITCODE
+    } finally {
+        [Console]::OutputEncoding = $prevOut
+        $ErrorActionPreference = $prev
+    }
+
+    if ($code -ne 0) {
+        $first = @($raw | Where-Object { "$_" -match '\S' } | Select-Object -First 1)
+        $result.Reason = if ($first) { "$first".Trim() } else { 'git show 失败' }
+        return $result
+    }
+    $lines = @(($raw | ForEach-Object { "$_" }))
+    $result.Slugs = @(Get-SlugsFromLines -Lines $lines)
+    $result.Ok = $true
+    return $result
+}

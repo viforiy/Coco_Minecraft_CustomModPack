@@ -115,6 +115,43 @@ if (-not $DryRun) {
     Info "别名表已刷新: $($aliasStats.Total) 条"
 }
 
+# 2.45) 三方判定: 元数据 / 文档 / HEAD 基线
+#       目的是把「用户删了文档行」和「新装尚未补录」分开, 两者在二元对比下无法区分
+$baseline = Get-BaselineDocSlugs -PackDir $PackDir -DocPath $DocPath
+$modKeysAll = @($mods | ForEach-Object { $_.Key })
+$normalKeys = @($modKeysAll | Where-Object { $docKeys -contains $_ })
+$userDeleted = @($modKeysAll | Where-Object { $docKeys -notcontains $_ -and $baseline.Slugs -contains $_ })
+$newUndoc    = @($modKeysAll | Where-Object { $docKeys -notcontains $_ -and $baseline.Slugs -notcontains $_ })
+$docOnlyKeys = @($docKeys | Where-Object { $modKeysAll -notcontains $_ })
+$metaGone    = @($docOnlyKeys | Where-Object { $baseline.Slugs -contains $_ })
+$pureGhost   = @($docOnlyKeys | Where-Object { $baseline.Slugs -notcontains $_ })
+
+Head '三方判定'
+if ($baseline.Ok) {
+    Info "基线     HEAD 版清单文档, $($baseline.Slugs.Count) 条"
+} else {
+    Warn "基线     不可用($($baseline.Reason))"
+    Say  '         无基线时不会判定删除, 缺失行一律视为新装未补录'
+}
+Info "正常     $($normalKeys.Count) 条"
+Info "新装未补录 $($newUndoc.Count) 条"
+if ($userDeleted.Count -gt 0) {
+    Warn "用户删行  $($userDeleted.Count) 条(依据: 基线有该 slug, 文档已无)"
+    foreach ($k in $userDeleted) {
+        $nm = ($mods | Where-Object { $_.Key -eq $k } | Select-Object -First 1)
+        $label = if ($nm -and $nm.Name) { $nm.Name } else { '(无名称)' }
+        Say  ("  - {0}  ({1})" -f $k, $label)
+    }
+    Say  '         这些模组的元数据仍存在; 删除动作在 F8 实现, 本次仅报告, 不执行'
+} else {
+    Info '用户删行 0 条'
+}
+if ($metaGone.Count -gt 0) {
+    Warn "元数据被删 $($metaGone.Count) 条(依据: 基线有该 slug, 文档仍有行, 元数据已缺)"
+    foreach ($k in $metaGone) { Say "  - $k" }
+}
+Info "文档残留 $($pureGhost.Count) 条(文档有行, 元数据从未存在)"
+
 # 2.5) 文档里存在、但元数据已没有的条目
 $modKeys = @($mods | ForEach-Object { $_.Key })
 $stale = @()
@@ -188,7 +225,8 @@ if ($synced -gt 0) {
 } else { Info '已有条目的 jar 文件名与端均与元数据一致' }
 
 # 3) 差异
-$newMods = @($mods | Where-Object { $docKeys -notcontains $_.Key })
+# 排除用户删行的那批: 它们等待 F8 删除元数据, 不应被补录回文档
+$newMods = @($mods | Where-Object { $docKeys -notcontains $_.Key -and $baseline.Slugs -notcontains $_.Key })
 if ($newMods.Count -eq 0) {
     Ok '没有发现未记录的模组, 无需操作'
     exit 0
