@@ -28,6 +28,12 @@
 
 .PARAMETER All
     不逐个询问是否处理, 直接处理全部新增模组
+
+.PARAMETER NoPrune
+    不删除清单中的失效条目(文档有行、元数据缺失)
+
+.PARAMETER NoRemove
+    不删除「用户删行」对应的元数据, 只报告
 #>
 [CmdletBinding()]
 param(
@@ -38,7 +44,10 @@ param(
     [switch]$NoSide,
     [switch]$All,
 
-    [switch]$NoPrune
+    [switch]$NoPrune,
+
+    # 跳过删除元数据(只报告用户删行)
+    [switch]$NoRemove
 )
 
 $ErrorActionPreference = 'Stop'
@@ -151,6 +160,85 @@ if ($metaGone.Count -gt 0) {
     foreach ($k in $metaGone) { Say "  - $k" }
 }
 Info "文档残留 $($pureGhost.Count) 条(文档有行, 元数据从未存在)"
+
+# 2.47) 执行删除: 用户删行的模组 -> 移除元数据(含备份与确认)
+if ($userDeleted.Count -gt 0) {
+    if ($DryRun) {
+        Warn 'DryRun: 不执行删除, 仅报告'
+    } elseif ($NoRemove) {
+        Info '已指定 -NoRemove, 跳过元数据删除'
+    } else {
+        Head '准备删除元数据'
+        $targets = @()
+        foreach ($k in $userDeleted) {
+            $mm = ($mods | Where-Object { $_.Key -eq $k } | Select-Object -First 1)
+            if ($mm) { $targets += $mm }
+        }
+
+        Say ''
+        Say '  将删除以下模组的元数据:'
+        foreach ($mm in $targets) { Say ("    - {0}  ({1})  -> mods/{2}" -f $mm.Key, $mm.Name, (Split-Path $mm.Path -Leaf)) }
+        Say  '  删除前会自动备份到缓存目录'
+        $ans = Read-Host '  确认删除吗 [y/N]'
+        if (-not $ans -or $ans -notmatch '^[Yy]') {
+            Info '未确认, 未做任何改动'
+        } else {
+            # 确认后才备份: 选 N 时不留下任何痕迹
+            $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+            $backupRoot = Join-Path $env:LOCALAPPDATA 'CocoPackwiz\backup'
+            $backupDir = Join-Path $backupRoot "删除-$stamp"
+            New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
+            $manifest = @(
+                "# 删除备份 $stamp",
+                "# 包目录 $PackDir",
+                "# 格式: slug <TAB> 名称 <TAB> 文件名",
+                ''
+            )
+            foreach ($mm in $targets) {
+                Copy-Item -LiteralPath $mm.Path -Destination (Join-Path $backupDir (Split-Path $mm.Path -Leaf)) -Force
+                $manifest += ("{0}`t{1}`t{2}" -f $mm.Key, $mm.Name, $mm.Filename)
+            }
+            [IO.File]::WriteAllText((Join-Path $backupDir '清单.txt'), ($manifest -join "`r`n"), $Utf8NoBom)
+            Info "备份目录 $backupDir ($($targets.Count) 个文件)"
+            $packwiz = Resolve-Packwiz
+            $removed = 0
+            $failed = 0
+            foreach ($mm in $targets) {
+                $okDel = $false
+                if ($packwiz) {
+                    Push-Location $PackDir
+                    $rmOut = & $packwiz remove $mm.Key 2>&1
+                    if ($LASTEXITCODE -eq 0) { $okDel = $true }
+                    Pop-Location
+                }
+                if (-not $okDel) {
+                    # 缺少 packwiz 或 remove 失败时退化为直接删文件
+                    Remove-Item -LiteralPath $mm.Path -Force -ErrorAction SilentlyContinue
+                    $okDel = -not (Test-Path $mm.Path)
+                }
+                if ($okDel) { $removed++; Ok "已删除 $($mm.Key)" } else { $failed++; Warn "删除失败 $($mm.Key)" }
+            }
+
+            if ($removed -gt 0 -and -not $packwiz) {
+                $pwz2 = Resolve-Packwiz
+                if ($pwz2) { Push-Location $PackDir; [void](& $pwz2 refresh 2>&1); Pop-Location }
+            }
+
+            # 文档计数可能因手工删行而失真, 这里重算并写回
+            $docNow = [IO.File]::ReadAllText($DocPath, [Text.Encoding]::UTF8) -split "`r?`n"
+            $fixedDoc = Repair-DocCounts $docNow @(Read-DocSections $docNow)
+            [IO.File]::WriteAllText($DocPath, ($fixedDoc -join "`r`n"), $Utf8NoBom)
+            Ok "已删除 $removed 个模组的元数据; 文档计数已重算"
+
+            # 重新读取元数据与差异, 供后续步骤使用
+            $mods = @(Get-ChildItem (Join-Path $PackDir 'mods') -Filter '*.pw.toml' -ErrorAction SilentlyContinue | ForEach-Object { Read-PwFile $_.FullName } | Sort-Object Key)
+            $modKeysAll = @($mods | ForEach-Object { $_.Key })
+            $newMods = @($mods | Where-Object { $docKeys -notcontains $_.Key -and $baseline.Slugs -notcontains $_.Key })
+            $docLines = $fixedDoc
+            $sections = @(Read-DocSections $docLines)
+        }
+    }
+}
 
 # 2.5) 文档里存在、但元数据已没有的条目
 $modKeys = @($mods | ForEach-Object { $_.Key })
