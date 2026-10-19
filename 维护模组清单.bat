@@ -30,11 +30,14 @@ set "RC=%errorlevel%"
 
 if not "%RC%"=="0" goto :failed
 
-rem 结束前询问是否推送, 直接回车即推送
+rem 由 开发工具.bat 调用时存在此变量, 推送询问交由菜单负责
+if defined COCO_NO_PUSH_PROMPT goto :done
+
+rem 结束前询问是否推送, 需要显式输入 y
 echo.
 set "_PUSH="
-set /p "_PUSH=要现在提交并推送元数据仓吗 [Y/n] : "
-if /i "%_PUSH%"=="n" goto :skipped
+set /p "_PUSH=要现在提交并推送元数据仓吗 [y/N] : "
+if /i not "%_PUSH%"=="y" goto :skipped
 if /i "%_PUSH%"=="no" goto :skipped
 
 if not exist "%~dp0推送元数据.bat" (

@@ -44,11 +44,15 @@ function Invoke-Git {
     # 原生命令写到 stderr 时, ErrorActionPreference=Stop 会把它变成终止错误,
     # 这里临时降级, 由调用方按退出码判断成败
     $prev = $ErrorActionPreference
+    # git 输出为 UTF-8, 若按控制台代码页(936)解码, 中文文件名会乱码
+    $prevOut = [Console]::OutputEncoding
     $ErrorActionPreference = 'Continue'
     try {
+        [Console]::OutputEncoding = [Text.Encoding]::UTF8
         $raw = & $Git -C $PackDir @GitArgs 2>&1
         $code = $LASTEXITCODE
     } finally {
+        [Console]::OutputEncoding = $prevOut
         $ErrorActionPreference = $prev
     }
     $text = (($raw | ForEach-Object { "$_" }) -join "`n")
@@ -66,7 +70,12 @@ Say '  提交并推送当前分支, 玩家与服务端下次启动即同步'
 Say ''
 
 # 1) 定位仓库
-$PackDir = Resolve-PackDir -ToolRoot $ToolHome -CliValue $PackDir -NonInteractive:([bool]$NoPrompt)
+try {
+    $PackDir = Resolve-PackDir -ToolRoot $ToolHome -CliValue $PackDir -NonInteractive:([bool]$NoPrompt)
+} catch {
+    Fail $_.Exception.Message
+    exit 1
+}
 if (-not (Test-Path (Join-Path $PackDir '.git'))) { Fail "目录不是 git 仓库: $PackDir"; exit 1 }
 $cfg = Read-ToolConfig $ToolHome
 $repo = Get-RepoInfo -PackDir $PackDir -PreferredRemote $cfg['REMOTE']
@@ -86,7 +95,7 @@ if ($branch -ne $expected) {
 }
 
 # 3) 变更汇总
-$status = (Invoke-Git @('status','--porcelain')).Out
+$status = (Invoke-Git @('-c','core.quotepath=false','status','--porcelain')).Out
 $lines = @($status -split "`n" | Where-Object { $_.Trim() -ne '' })
 if ($lines.Count -eq 0) {
     Ok '工作区干净, 没有需要提交的改动'

@@ -63,7 +63,12 @@ Say '  只读模式加 -DryRun; 跳过 side 校正加 -NoSide'
 Say ''
 
 # 1) 定位包目录: 命令行 -> 环境变量 COCO_PACK_DIR -> 工具配置.cfg -> 自动探测 -> 手工输入
-$PackDir = Resolve-PackDir -ToolRoot $ToolHome -CliValue $PackDir -NonInteractive:([bool]$All)
+try {
+    $PackDir = Resolve-PackDir -ToolRoot $ToolHome -CliValue $PackDir -NonInteractive:([bool]$All)
+} catch {
+    Fail $_.Exception.Message
+    exit 1
+}
 if (-not $DocPath) { $DocPath = Join-Path $PackDir '模组列表介绍.md' }
 if (-not (Test-Path $DocPath)) {
     $allMods = @(Get-ChildItem (Join-Path $PackDir 'mods') -Filter '*.pw.toml' | ForEach-Object { Read-PwFile $_.FullName } | Sort-Object Key)

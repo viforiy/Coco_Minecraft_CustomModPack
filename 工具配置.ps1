@@ -96,17 +96,23 @@ function Resolve-PackDir {
         [switch]$NonInteractive
     )
 
-    # 显式指定且合法时直接用, 不再列候选
+    # 显式指定优先: 合法则直接用, 不合法则中止, 绝不回退到其他目录
     if ($CliValue) {
         $explicit = $CliValue.Trim().Trim('"').TrimEnd('\')
         if (Test-PackDir $explicit) { return (Resolve-Path $explicit).Path }
-        Write-Host "[注意] -PackDir 指定的目录缺少 pack.toml 或 mods: $explicit" -ForegroundColor Yellow
+        throw "-PackDir 指定的目录缺少 pack.toml 或 mods: $explicit"
+    }
+    if ($env:COCO_PACK_DIR) {
+        $fromEnv = $env:COCO_PACK_DIR.Trim().Trim('"').TrimEnd('\')
+        if (-not (Test-PackDir $fromEnv)) {
+            throw "环境变量 COCO_PACK_DIR 指定的目录缺少 pack.toml 或 mods: $fromEnv"
+        }
     }
 
     $cfg = Read-ToolConfig $ToolRoot
     $candidates = @(Find-PackCandidates -ToolRoot $ToolRoot -CliValue $CliValue -Configured $cfg['PACK_DIR'])
     # 显式 -PackDir 视为一次性指定, 不回写配置
-    $persist = [string]::IsNullOrWhiteSpace($CliValue)
+    $persist = ([string]::IsNullOrWhiteSpace($CliValue) -and [string]::IsNullOrWhiteSpace($env:COCO_PACK_DIR))
 
     if ($candidates.Count -eq 1) {
         $chosen = $candidates[0]
@@ -129,7 +135,10 @@ function Resolve-PackDir {
             $chosen = $candidates[0]
         } else {
             $pick = Read-Host '  选择序号'
-            if (-not $pick -or $pick -notmatch '^\d+$' -or [int]$pick -lt 1 -or [int]$pick -gt $candidates.Count) { $pick = '1' }
+            if (-not $pick) {
+                throw '未选择包目录, 已中止。请用 -PackDir 指定, 或设置环境变量 COCO_PACK_DIR'
+            }
+            if ($pick -notmatch '^\d+$' -or [int]$pick -lt 1 -or [int]$pick -gt $candidates.Count) { $pick = '1' }
             $chosen = $candidates[[int]$pick - 1]
         }
         if ($persist) {
@@ -146,7 +155,10 @@ function Resolve-PackDir {
     Write-Host '       需要同时含 pack.toml 与 mods 目录, 且通常是 git 仓库' -ForegroundColor DarkGray
     while ($true) {
         $raw = Read-Host '  packwiz 包目录'
-        if (-not $raw) { continue }
+        if (-not $raw) {
+            # 输入结束(EOF)时 Read-Host 会持续返回空, 继续循环将永远退不出去
+            throw '未提供包目录, 已中止。请用 -PackDir 指定, 或设置环境变量 COCO_PACK_DIR'
+        }
         $raw = $raw.Trim('"').TrimEnd('\')
         if (Test-PackDir $raw) {
             $cfg['PACK_DIR'] = $raw
