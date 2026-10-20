@@ -662,7 +662,7 @@ metafile = true
 
 [[files]]
 file = "mods/muoniumplayer.pw.toml"
-hash = "f728dfba66ec837fdbdbb58561120cf605adc2f3773eb252bdca55f334f05b75"
+hash = "a78ac78b1526938ab6b8385609bc69cdfd76bf0e9d5fe33ad172fcd5984b23ed"
 metafile = true
 
 [[files]]
@@ -1002,4 +1002,4 @@ metafile = true
 
 [[files]]
 file = "别名表.cfg"
-hash = "428054ef71f00bccb330df96d565cfccabef9589f52077db9ad94caa581411d1"
+hash = "3f82507393737811b73ec53c7e9a121e4a462b6790c9290d2be3f624c8fed20c"
