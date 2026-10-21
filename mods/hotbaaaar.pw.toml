@@ -1,0 +1,13 @@
+name = "HotBaaaar"
+filename = "HorBaaaar-0.2.0.jar"
+side = "both"
+
+[download]
+hash-format = "sha1"
+hash = "54db84b7efe983a4cface98cb075bf9c78f32103"
+mode = "metadata:curseforge"
+
+[update]
+[update.curseforge]
+file-id = 5734403
+project-id = 983846
