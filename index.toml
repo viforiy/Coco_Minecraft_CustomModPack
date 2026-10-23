@@ -256,6 +256,11 @@ hash = "08a334ae5565e122d26b819cba16ce784776a10fe100ab2b22de72a5a2bac653"
 metafile = true
 
 [[files]]
+file = "mods/curios.pw.toml"
+hash = "36debf7653e95a855b4fedacc19027cf2e01960fc0b6d55ef2ffbffbcb455690"
+metafile = true
+
+[[files]]
 file = "mods/displaycase.pw.toml"
 hash = "f466176613569fa62d77533c3bdf7d522a04fcf77375a38c9277403c2d3f15c6"
 metafile = true
