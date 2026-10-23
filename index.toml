@@ -671,11 +671,6 @@ hash = "6bc414cc0f2d4c078fe83f384d786343f701f371d657c5279b5b0df1595804bd"
 metafile = true
 
 [[files]]
-file = "mods/muoniumplayer.pw.toml"
-hash = "a78ac78b1526938ab6b8385609bc69cdfd76bf0e9d5fe33ad172fcd5984b23ed"
-metafile = true
-
-[[files]]
 file = "mods/natures-compass.pw.toml"
 hash = "35acdf433fe8f8599f59975e848efdb717663c2c471d3a5dc18743799795a736"
 metafile = true
