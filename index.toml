@@ -416,6 +416,11 @@ hash = "932c65fb598293dba5dc60a76fc64c2579db427018b10dd4757dd421d9abcaf0"
 metafile = true
 
 [[files]]
+file = "mods/grand-teleport.pw.toml"
+hash = "3bdb790d8ec4fc19ff69ce2e942ec4950501eda47c182994674b55f1047fcdea"
+metafile = true
+
+[[files]]
 file = "mods/happy-ghast.pw.toml"
 hash = "d7a124610ae81e7e196d95807aa0f929fdc2c3ed358ae8f4f285088b1f01a792"
 metafile = true
