@@ -1001,6 +1001,11 @@ hash = "dde31f05114c72cb2f58e522417487730b872e456f77fdd02c032c9235791f6c"
 metafile = true
 
 [[files]]
+file = "mods/yuushya-townscape.pw.toml"
+hash = "be623dda8516bbd20d9da1eb7b0ccb4373b068cc83b0788752a743bcdf5b8ae9"
+metafile = true
+
+[[files]]
 file = "mods/zeta.pw.toml"
 hash = "cb474b6c0dde741836ed4f796f3b6ab0b9d3cdc0453e651122cd002d5d1f8df8"
 metafile = true

@@ -1,0 +1,13 @@
+name = "Yuushya Townscape"
+filename = "yuushya-1.21.0-neoforge-2.2.3.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/lfVtagkm/versions/tP3bW7cj/yuushya-1.21.0-neoforge-2.2.3.jar"
+hash-format = "sha512"
+hash = "1cf9b65e7fbe58dc489a0db5b3f2114d449872ed834ad3361fb3c51fd74e83c061fe027b5122d17f8a19735508f6661631031c69f66d2b58f5cde782bfaf1caf"
+
+[update]
+[update.modrinth]
+mod-id = "lfVtagkm"
+version = "tP3bW7cj"
