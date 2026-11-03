@@ -801,11 +801,6 @@ hash = "bcce409dc3bd3c765d92538e192563b4baf345a843acb5fb9c90fce4ebccdf58"
 metafile = true
 
 [[files]]
-file = "mods/simple-backups.pw.toml"
-hash = "b3b444ca79a5786d5c7589a7119fcf4c3e4cf73c70860c17acb63c88fc06749a"
-metafile = true
-
-[[files]]
 file = "mods/sky-villages.pw.toml"
 hash = "3c88d13ec3f4c2904befee38aa1a4fc27ffb0c322fb4186d82a53179125e43d1"
 metafile = true
