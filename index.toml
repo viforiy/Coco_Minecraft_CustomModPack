@@ -451,11 +451,6 @@ hash = "be75fa97845b24c102d33441e3f1e9a24d0ab622d57b031c0d0f6888ce5927a5"
 metafile = true
 
 [[files]]
-file = "mods/hotbaaaar.pw.toml"
-hash = "875328507f82465a01625521ce3923a9623605ac5758b58792ba9f75668f6a81"
-metafile = true
-
-[[files]]
 file = "mods/idas.pw.toml"
 hash = "b13158a1f8daea08344c22f072a708fd658a958e06a24560e5a3016e69c16375"
 metafile = true
