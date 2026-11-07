@@ -501,6 +501,11 @@ hash = "ab503e89461dff879ee793253e173625b6ab868f570a371323ef725e567cf5ea"
 metafile = true
 
 [[files]]
+file = "mods/ipla.pw.toml"
+hash = "eef390835abd25e586a477b4b27a21765839c80960e77254297d097216710d62"
+metafile = true
+
+[[files]]
 file = "mods/iris.pw.toml"
 hash = "db1c1e6382878b78e994dba1b9026935f8d1c5ca685c89d2437858e0a0dcab58"
 metafile = true
