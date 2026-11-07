@@ -76,11 +76,6 @@ hash = "01fcacd1e98c9c7e4e78dde9991229c58b2bbe36da5f5beda5001c5aa19f8e72"
 metafile = true
 
 [[files]]
-file = "mods/better-modlist.pw.toml"
-hash = "883c91c721fd8abb22647e197cb13d614074609e7712d359b8b19762a6ffdd64"
-metafile = true
-
-[[files]]
 file = "mods/better-ping-display.pw.toml"
 hash = "cc2e6dda94a7a6f5487843cafe569d8044bf9482cbf03f062cf4595f1fb05281"
 metafile = true
