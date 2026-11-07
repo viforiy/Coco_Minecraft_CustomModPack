@@ -3,9 +3,9 @@ filename = "ipla-mc1.21.1-neoforge-6.4.7beta.jar"
 side = "both"
 
 [download]
-url = "https://cdn.modrinth.com/data/7dLiTaTa/versions/y0A1wATI/ipla-mc1.21.1-neoforge-6.4.7beta.jar"
+url = "https://cdn.modrinth.com/data/7dLiTaTa/versions/npxUs2EW/ipla-mc1.21.1-neoforge-6.4.3beta.jar"
 hash-format = "sha512"
-hash = "c43302f5c7426f993256fe6280a49aafb8905360980c4ff08eb8ef63129fd723774e2d9b35ac60bae7ee6222ae9cd2c459f77475bbd9325041ab6eaf25435cf8"
+hash = "6bb05a10cb8e8dcd60953a02a9bfd4187f50e28fd0f971b0404f85452cb61ba03fbd7d74148c2e155e6a9694084a0e03796aaa99fed149d52fc291cee4564995"
 
 [update]
 [update.modrinth]

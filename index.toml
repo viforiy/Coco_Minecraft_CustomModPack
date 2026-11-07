@@ -507,7 +507,7 @@ metafile = true
 
 [[files]]
 file = "mods/ipla.pw.toml"
-hash = "eef390835abd25e586a477b4b27a21765839c80960e77254297d097216710d62"
+hash = "b3c276e5ba521802ae331acab6fdec9edce5aaf3fd3b9349f4a0f0050ea1545d"
 metafile = true
 
 [[files]]
@@ -1017,4 +1017,4 @@ metafile = true
 
 [[files]]
 file = "别名表.cfg"
-hash = "ffe1fb7b717b6cb105956fcb9da0f80eca6a0d7f9a252a0a5125358632297e04"
+hash = "234bd201d1d8df4f7771dac717fa85eebf81fe2ffab679bfdcf6692b4b3e6466"
