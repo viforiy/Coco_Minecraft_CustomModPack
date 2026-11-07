@@ -1,0 +1,8 @@
+name = "Text Placeholder API(Fabric)"
+filename = "placeholder-api-2.4.2+1.21.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/eXts2L7r/versions/U5bhVym2/placeholder-api-2.4.2%2B1.21.jar?mr_download_reason=standalone&mr_game_version=1.21.1&mr_loader=fabric"
+hash-format = "sha256"
+hash = "c0187ee299527ac7a3e0b1e83601dcdc0de631e286fe41e6be1a75958ea8e443"

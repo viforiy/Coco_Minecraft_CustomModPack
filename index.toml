@@ -671,6 +671,11 @@ hash = "79239b5a547be0fae2e8f2a96b2807f538b416a47fcca57233058ca1ec92c2c9"
 metafile = true
 
 [[files]]
+file = "mods/mod-menu.pw.toml"
+hash = "8ae33a83f086a398e1eb928000124f7b689fb061a61a7648618d24bc9fc0f3f4"
+metafile = true
+
+[[files]]
 file = "mods/modernfix.pw.toml"
 hash = "d10fbef1555f5277563b9cbf7683811ac0f38c1af41646e6ce5c3aaa2149425d"
 metafile = true
@@ -906,6 +911,11 @@ hash = "dd46fad79cf33a00123be0a74c73581da72cd98503ef23822a624a08f4b10ff2"
 metafile = true
 
 [[files]]
+file = "mods/text-placeholder-api.pw.toml"
+hash = "099bb3b4b8e686ba061f25d25ac63311d4f708e27889257ee9351e88898158f9"
+metafile = true
+
+[[files]]
 file = "mods/this-rocks-forge.pw.toml"
 hash = "5535600dcfd4876fc730e9b6b3bb7ab0db8f99dd13d8e7320cd15b8267387333"
 metafile = true
@@ -1022,4 +1032,4 @@ metafile = true
 
 [[files]]
 file = "别名表.cfg"
-hash = "234bd201d1d8df4f7771dac717fa85eebf81fe2ffab679bfdcf6692b4b3e6466"
+hash = "87a4e060b35e04f76dc74dedf4d94929e0fc56486956bb13e4af09acd929dda6"

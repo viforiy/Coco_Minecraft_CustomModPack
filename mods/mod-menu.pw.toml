@@ -1,0 +1,8 @@
+name = "Mod Menu(Fabric)"
+filename = "modmenu-11.0.5.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/mOgUt4GM/versions/6lgOkclV/modmenu-11.0.5.jar?mr_download_reason=standalone&mr_game_version=1.21.1&mr_loader=fabric"
+hash-format = "sha256"
+hash = "afa55fe4e7c48560126dbe654fa9647f141bc6ffd3ce35525b65dd65d88251b5"
