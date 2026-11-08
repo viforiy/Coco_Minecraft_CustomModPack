@@ -467,7 +467,7 @@ metafile = true
 
 [[files]]
 file = "mods/imblocker-original.pw.toml"
-hash = "91a73d149ab0a877d9a0ab5c10b0938ca049f23e23632db31aea834cd002252c"
+hash = "b3d17df598bded3cd8cf4e0f9bfd61866c7aec56578f95b97a9707e36bdb167e"
 metafile = true
 
 [[files]]
