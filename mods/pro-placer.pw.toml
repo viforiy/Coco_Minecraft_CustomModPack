@@ -1,0 +1,13 @@
+name = "Pro Placer"
+filename = "ProPlacer-v21.1.1-1.21.1-NeoForge.jar"
+side = "client"
+
+[download]
+hash-format = "sha1"
+hash = "458337cbff5860133d95794da3a1439e640f9581"
+mode = "metadata:curseforge"
+
+[update]
+[update.curseforge]
+file-id = 6903607
+project-id = 368320
