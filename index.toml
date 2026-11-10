@@ -296,6 +296,11 @@ hash = "a970a320e53ca7a3de230bc005fd7c1f5cf5ed071ce3577bb7c0a992740a8f55"
 metafile = true
 
 [[files]]
+file = "mods/easy-magic.pw.toml"
+hash = "1aa75105514780685caab9b945db2a2ea7c0594ced8c01e12f2a3e331f1af4e6"
+metafile = true
+
+[[files]]
 file = "mods/elevatormod.pw.toml"
 hash = "58a52192b85fb49a4b772cd54677f84515a2dfc26a14d54eb880ed01f1186c5a"
 metafile = true
@@ -777,7 +782,7 @@ metafile = true
 
 [[files]]
 file = "mods/puzzles-lib.pw.toml"
-hash = "611f589f0874ce5db4a2241421ce4453f9efb5bedf57e3f24c039a16a0e604c5"
+hash = "d465abcc806c0d4fdeefb6a5e774cca4fff0ffd27d7c75954ab4688f4c9eaf05"
 metafile = true
 
 [[files]]
