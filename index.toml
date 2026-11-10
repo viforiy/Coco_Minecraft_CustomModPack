@@ -381,6 +381,11 @@ hash = "9c6665a50883afc5b10dcc0b8fa0eae0acc0a8b05dd345b072cbc3a4e3be89e4"
 metafile = true
 
 [[files]]
+file = "mods/forever-a-child.pw.toml"
+hash = "fe28b7402eb048a58ded6d3cd61b4aa255ac4915a09617e0eb3e8c5d76360769"
+metafile = true
+
+[[files]]
 file = "mods/forgematica.pw.toml"
 hash = "6867fc4a8a1d992ee908e06d9275b103430822f04e77e3fcd9b168571382cc48"
 metafile = true
