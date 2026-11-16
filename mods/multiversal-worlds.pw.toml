@@ -1,0 +1,13 @@
+name = "Multiversal Worlds"
+filename = "multiversal-1.0.0.jar"
+side = "both"
+
+[download]
+hash-format = "sha1"
+hash = "f4bb74cfea8564df9bb2e01913830ef1c3fefbcc"
+mode = "metadata:curseforge"
+
+[update]
+[update.curseforge]
+file-id = 9349932
+project-id = 1770187
