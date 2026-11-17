@@ -1,6 +1,26 @@
 hash-format = "sha256"
 
 [[files]]
+file = "[客户端]mod后处理修复脚本.cmd"
+hash = "98253e3f7cfeac026a4bea3189420f4f6ca43020dde44b480a3563c5aea48918"
+
+[[files]]
+file = "fix-grand-teleport-version.cmd"
+hash = "c8d177403800fced78c3cbd43866acd5df025e7f921024159eab5d034270a209"
+
+[[files]]
+file = "fix-grand-teleport-version.ps1"
+hash = "97c0eb90d82d1c99830f9e857a57ff9cc89945d04a0be641182d78a00c0182da"
+
+[[files]]
+file = "mcef-block-download.cmd"
+hash = "89ff92b9dc334b9e11b451a7bada44c10ee02a7003246b36442923fc6d8a63ef"
+
+[[files]]
+file = "mcef-block-download.ps1"
+hash = "4488402190219ae13cd0667dd8b8c14f2cca7105013c3600dfc134894225b959"
+
+[[files]]
 file = "mods/accessible-step.pw.toml"
 hash = "0a29963989ee266df0d14affbab7b080e48e1d03630c242edd3e32e19ced44eb"
 metafile = true
@@ -1086,5 +1106,13 @@ hash = "cb474b6c0dde741836ed4f796f3b6ab0b9d3cdc0453e651122cd002d5d1f8df8"
 metafile = true
 
 [[files]]
+file = "muoniumconfig-patch-soundevent.cmd"
+hash = "066f81a9c2ff1cd57d324b1bc868719ac2f5bfab86856b2bde8e7233ca44447e"
+
+[[files]]
+file = "muoniumconfig-patch-soundevent.ps1"
+hash = "2d8bba7635a03892efe634c9a9b847a7a66c028b48239dbe2d536bdaf8de85c4"
+
+[[files]]
 file = "别名表.cfg"
-hash = "2265417adff568a3361419bf052ba00e867c59adfeaa2c437e9a403b37453a24"
+hash = "623f77d5c3e4a4e1d83894affec0507a9e81c3d1816655d0f81d33ccca52cf53"
