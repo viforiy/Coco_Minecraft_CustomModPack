@@ -151,6 +151,11 @@ hash = "1d5cc2b6dcfd1fc3adba4566b1c29b57ff1175316678c1f22e63cbc3e28a5ba0"
 metafile = true
 
 [[files]]
+file = "mods/cinematic-afk.pw.toml"
+hash = "ecab7b907f6d291001da04eaca1bd2ddf39bcbc38e3ff0c691bcd9ad43e99f73"
+metafile = true
+
+[[files]]
 file = "mods/civillis.pw.toml"
 hash = "230cc3414c64bc6da098bc861d9b5c4747700a9065d7cb514284a0b766424c0b"
 metafile = true
