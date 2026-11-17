@@ -466,6 +466,11 @@ hash = "e381614dc48bb664b1fd1765ae69ec4ee05babad8b847fe1a1b6bb8fd2180fcc"
 metafile = true
 
 [[files]]
+file = "mods/hold-my-items.pw.toml"
+hash = "c39b3c8f717a061d0e130bd32d8222179de645653e919a091f0de0a2c210b090"
+metafile = true
+
+[[files]]
 file = "mods/hopo-better-mineshaft.pw.toml"
 hash = "7289984033fa094ca978837e7a4bf7fa0c6f56f6902283fcc3997768444a0fa9"
 metafile = true
@@ -1082,4 +1087,4 @@ metafile = true
 
 [[files]]
 file = "别名表.cfg"
-hash = "2238fc2e1d41c4ccf5ea02c1e188eca2b967c9a189612a5b900a65e7096b3d0c"
+hash = "2265417adff568a3361419bf052ba00e867c59adfeaa2c437e9a403b37453a24"
