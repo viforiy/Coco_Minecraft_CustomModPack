@@ -11,6 +11,11 @@ hash = "f775c1801ced53810ea696b5fc603b5ca073153de3ad3ca52bf7942dcaf30f32"
 metafile = true
 
 [[files]]
+file = "mods/afk-cinematics.pw.toml"
+hash = "40c7ba77c8c2232708dd74c11612b34c0a235d9b6ca045ddf34e66ff24954c37"
+metafile = true
+
+[[files]]
 file = "mods/almanac.pw.toml"
 hash = "c65748ba4e13309eeba1dae2dfb348ad9b6348a093dc02a901e3e5a2a6110b0d"
 metafile = true
@@ -1062,4 +1067,4 @@ metafile = true
 
 [[files]]
 file = "别名表.cfg"
-hash = "8fe072ec4a5261604350d9e104ec69835e8cac847cd68671e477de233769e754"
+hash = "05c04b72934401ad32b63d6a24cbda7fdb6b87ff87259fda6e373486966d8d66"

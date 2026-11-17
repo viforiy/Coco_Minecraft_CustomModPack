@@ -1,0 +1,8 @@
+name = "AFK Cinematics"
+filename = "afk-cinematics-1.21.1.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/MjVuY1gY/versions/UxoI2zMA/afk-cinematics-1.21.1.jar?mr_download_reason=standalone&mr_game_version=1.21.1&mr_loader=fabric"
+hash-format = "sha256"
+hash = "054984af2ed0e7a1a3acc01930a24a5a3008eb27db8e7f032b7a800868022989"
