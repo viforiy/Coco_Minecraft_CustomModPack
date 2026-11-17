@@ -721,6 +721,11 @@ hash = "54117ac8bd394c8692b5419ca33284943beadd1f24e3c0cbd53c29813cd0ae95"
 metafile = true
 
 [[files]]
+file = "mods/muoniumplayer.pw.toml"
+hash = "4a344ab474c05b4c69f67603fe23e983d0b33762fd51e4a2ee0c5469ef66b2b6"
+metafile = true
+
+[[files]]
 file = "mods/natures-compass.pw.toml"
 hash = "35acdf433fe8f8599f59975e848efdb717663c2c471d3a5dc18743799795a736"
 metafile = true
@@ -1067,4 +1072,4 @@ metafile = true
 
 [[files]]
 file = "别名表.cfg"
-hash = "05c04b72934401ad32b63d6a24cbda7fdb6b87ff87259fda6e373486966d8d66"
+hash = "2238fc2e1d41c4ccf5ea02c1e188eca2b967c9a189612a5b900a65e7096b3d0c"
