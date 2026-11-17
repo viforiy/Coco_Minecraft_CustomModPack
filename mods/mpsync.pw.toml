@@ -1,0 +1,8 @@
+name = "mpsync"
+filename = "mpsync-1.21.1-neoforge-1.4.2.jar"
+side = "server"
+
+[download]
+url = "https://xafj-cu11.baidupcs.com/file/8564a03b4hed16985a16386cca4f167e?bkt=en-864c1d195a8f2f41d65f5045968c749e5c23f58ae13268bd7c4268680bd058df03e1cee671609dfef735b817a96d69b02860cd184abb8e1fb72b9947de5cd233&fid=1103011551928-250528-750103315001892&time=1794916448&sign=FDTAXUbGERQlBHSKfWqiu-DCb740ccc5511e5e8fedcff06b081203-o84Mblcn6k944DbRg7ZPrz7K9M8%3D&to=419&size=153778&sta_dx=153778&sta_cs=0&sta_ft=jar&sta_ct=3&sta_mt=3&fm2=MH%2CBaoding%2CAnywhere%2C%2C%E5%9B%9B%E5%B7%9D%2Ccnc&ctime=1794159696&mtime=1794159696&dt3=0&resv0=-1&resv1=0&resv2=rlim&resv3=5&resv4=153778&vuk=2638536393&iv=2&vl=0&htype=&randtype=&tkbind_id=0&newver=1&newfm=1&secfm=1&flow_ver=3&pkey=en-b66da22363a1d12035478aeca381c3be35d85e402d35381d142916b16e436c301938a5dc454973972330605a0ac288c9667d0181206e282a305a5e1275657320&expires=8h&rt=sh&r=467871153&vbdid=3636350470&fin=mpsync-1.21.1-neoforge-1.4.2.jar&fn=mpsync-1.21.1-neoforge-1.4.2.jar&bflag=419&rtype=1&clienttype=0&dp-logid=523407452681708640&dp-callid=0.1&hps=1&tsl=0&csl=0&fsl=-1&csign=pvaiH67I%2ByZW9fQSbfPGBkIwGhk%3D&so=0&ut=1&uter=4&serv=0&uc=2246652891&ti=2c4b8677c17eeccf352bd871a350c89344601c009e7957d1&hflag=30&from_type=1&adg=c_63b9b9c475bb48aa3f810d727d5c73ec&reqlabel=250528_f_0d379c25691f1db02fd2dff786ffd19a_-1_e575750a3c4aa01749b9e79faa454520&fpath=%E6%88%91%E7%9A%84%E8%B5%84%E6%BA%90%2FMuoniumPlayer%2F%E4%B8%80%E8%B5%B7%E5%90%AC%E6%9C%8D%E5%8A%A1%E7%AB%AF&by=themis&resvsflag=1-0-0-1-1-1&hasfgid=M&ccn=CN"
+hash-format = "sha256"
+hash = "83dc8a5cd3ef067e08ede3851223de7ae428aacb70cf59ad2332df87f1d83f6c"
