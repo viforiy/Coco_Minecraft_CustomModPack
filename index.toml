@@ -446,8 +446,8 @@ hash = "932c65fb598293dba5dc60a76fc64c2579db427018b10dd4757dd421d9abcaf0"
 metafile = true
 
 [[files]]
-file = "mods/grand-teleport.pw.toml"
-hash = "3bdb790d8ec4fc19ff69ce2e942ec4950501eda47c182994674b55f1047fcdea"
+file = "mods/grandteleport-neoforge.pw.toml"
+hash = "e7817035ac317b305d3fd1961ae04f47c07143c8c6b0bf7c1c5fc404c2cc7534"
 metafile = true
 
 [[files]]

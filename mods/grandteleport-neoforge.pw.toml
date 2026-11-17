@@ -1,0 +1,13 @@
+name = "GrandTeleport NeoForge"
+filename = "GrandTeleport-NeoForge-1.21.1-neoforge-1.0.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/PsllFHj8/versions/c8G8d2Nt/GrandTeleport-NeoForge-1.21.1-neoforge-1.0.1.jar"
+hash-format = "sha512"
+hash = "fa1ec16d48d6b91bdbd84b93ec4f346d24e63ac550be597341f905192e5981881f9ee372278deb93a3171bd2b3e26e76e0634c1c4c11a44c8a3999f07531c7a3"
+
+[update]
+[update.modrinth]
+mod-id = "PsllFHj8"
+version = "c8G8d2Nt"
