@@ -228,6 +228,12 @@ param(
     [switch]$StrictModCheck,
     [switch]$Offline,
 
+    # ── Java ───────────────────────────────────────────────────────────────
+    #   -JavaPath 可以给 java.exe、bin 目录, 或 JDK 根目录, 三种都认
+    #   给了就只用它; 版本不够(< 21)会直接报错, 不会偷偷换成别的
+    [string]$JavaPath,
+    [switch]$PickJava,
+
     # ── 网络 ───────────────────────────────────────────────────────────────
     [ValidateSet('auto', 'on', 'off')]
     [string]$Proxy = 'auto',
@@ -251,6 +257,8 @@ $script:ProxyUrl   = $null
 $script:ProxySource = 'none'
 $script:Ctx        = $null
 $script:LockHeld   = $false
+$script:JavaExeResolved  = $null                          # 本次运行最终选定的 java.exe
+$script:JavaVersionCache = @{}                            # java.exe 路径 -> 主版本号
 
 # ============================================================================
 #  一. 输出
@@ -980,27 +988,62 @@ function Resolve-McDirFromPath {
 
 function Get-SettingsPath { return (Join-Path $PSScriptRoot '配置.cfg') }
 
-function Get-SavedMcDir {
-    <# 读"上次用的 .minecraft", 存在脚本同目录的 配置.cfg #>
+function Get-Setting {
+    <#
+        读 配置.cfg 里的一个键(文件格式是 键=值, # 开头为注释)
+        目前用到的键:
+            McDir      上次用的 PCL 实例(.minecraft)
+            JavaPath   上次指定的 java(可为 java.exe / bin 目录 / JDK 根目录)
+    #>
+    param([string]$Key)
     $path = Get-SettingsPath
     if (-not (Test-Path -LiteralPath $path)) { return $null }
     $text = Read-TextFile $path
     if (-not $text) { return $null }
-    $m = [regex]::Match($text, '(?m)^McDir=(.*)$')
+    $m = [regex]::Match($text, "(?m)^$([regex]::Escape($Key))=(.*)$")
     if ($m.Success) { return $m.Groups[1].Value.Trim() }
     return $null
 }
 
-function Save-McDir {
-    param([string]$Path)
-    if ((Get-SavedMcDir) -eq $Path) { return }
-    try {
-        Set-Content -LiteralPath (Get-SettingsPath) -Value @(
-            '# 本文件由 NeoForgeSwitch.ps1 自动维护, 记录上次使用的 .minecraft',
-            "McDir=$Path"
-        ) -Encoding UTF8
-    } catch { }
+function Set-Setting {
+    <#
+        写一个键(存在则替换, 不存在则追加), 保留文件里其它键和注释
+
+        早期版本直接 Set-Content 整份重写, 加第二个键时会把第一个冲掉,
+        所以改成"读-改-写"。
+    #>
+    param([string]$Key, [string]$Value)
+
+    if ((Get-Setting $Key) -eq $Value) { return }
+
+    $path = Get-SettingsPath
+    $lines = @()
+    if (Test-Path -LiteralPath $path) {
+        $lines = @(Get-Content -LiteralPath $path -Encoding UTF8)
+    }
+    if ($lines.Count -eq 0) {
+        $lines = @('# 本文件由 NeoForgeSwitch.ps1 自动维护')
+    }
+
+    $out = @()
+    $replaced = $false
+    foreach ($l in $lines) {
+        if ($l -match "^$([regex]::Escape($Key))=") {
+            $out += "$Key=$Value"
+            $replaced = $true
+        } else {
+            $out += $l
+        }
+    }
+    if (-not $replaced) { $out += "$Key=$Value" }
+
+    try { Set-Content -LiteralPath $path -Value $out -Encoding UTF8 } catch { }
 }
+
+function Get-SavedMcDir { return (Get-Setting 'McDir') }
+function Save-McDir { param([string]$Path) Set-Setting -Key 'McDir' -Value $Path }
+function Get-SavedJavaPath { return (Get-Setting 'JavaPath') }
+function Save-JavaPath { param([string]$Path) Set-Setting -Key 'JavaPath' -Value $Path }
 
 function Get-AllMcDirs {
     <#
@@ -1073,12 +1116,15 @@ function Get-AllMcDirs {
 
 function Select-McDirInteractively {
     <#
-        列出所有候选整合包让用户挑一个
+        选一个 PCL 实例(.minecraft), 选中后写进 配置.cfg
 
-        这是"换一个 PCL 实例"的唯一入口: 选中后会写进 配置.cfg,
-        之后不加 -McDir 也会默认用它。
+        这是"换一个 PCL 实例"的唯一入口: 之后不加 -McDir 也会默认用它。
 
-        注意它选的是 PCL 实例(.minecraft), 不是整合包 —— 整合包(版本)由
+        两种来源(和 Select-JavaInteractively 保持一致):
+          · 扫描结果   盘符根 / Program Files\Minecraft / 桌面 / 文档 / 下载 / -ScanRoot
+          · 手动输入   直接粘贴路径; 给 .minecraft 内部的任一层都行(会自动上溯)
+
+        注意它选的是 PCL 实例, 不是整合包 —— 整合包(版本)由
         Select-VersionInteractively 在选定实例之后再选。
     #>
     param([string]$Current, [string[]]$ExtraRoots)
@@ -1086,28 +1132,54 @@ function Select-McDirInteractively {
     Say ''
     Say '扫描本机的 PCL 实例(.minecraft)...'
     $list = @(Get-AllMcDirs -ExtraRoots $ExtraRoots)
-    if ($list.Count -eq 0) { throw '没有找到任何 .minecraft 目录, 请用 -McDir 直接指定' }
 
-    Say ''
-    Say '找到以下 PCL 实例:'
-    Say ''
-    for ($i = 0; $i -lt $list.Count; $i++) {
-        $item = $list[$i]
-        $mark = ''
-        if ($Current -and $item.Path -eq $Current) { $mark = '  <- 当前' }
-        $tag = if ($item.Valid) { '' } else { '  [缺 libraries, 可能不完整]' }
-        $color = if ($mark) { 'Cyan' } elseif ($item.Valid) { 'White' } else { 'DarkGray' }
-        Write-Host ("  [{0,2}] {1}" -f ($i + 1), $item.Path) -ForegroundColor $color
-        Write-Host ("       {0} 个版本{1}{2}" -f $item.VersionCount, $tag, $mark) -ForegroundColor DarkGray
+    if ($list.Count -gt 0) {
+        Say ''
+        Say '找到以下 PCL 实例:'
+        Say ''
+        for ($i = 0; $i -lt $list.Count; $i++) {
+            $item = $list[$i]
+            $mark = ''
+            if ($Current -and $item.Path -eq $Current) { $mark = '  <- 当前' }
+            $tag = if ($item.Valid) { '' } else { '  [缺 libraries, 可能不完整]' }
+            Write-Host '   ' -NoNewline
+            Write-Host ("[{0,2}]" -f ($i + 1)) -NoNewline -ForegroundColor DarkCyan
+            Write-Host ('  ' + $item.Path) -NoNewline -ForegroundColor $(if ($item.Valid) { 'White' } else { 'Gray' })
+            if ($mark) { Write-Host $mark -NoNewline -ForegroundColor Cyan }
+            Write-Host ''
+            Write-Host ("        {0} 个版本{1}" -f $item.VersionCount, $tag) -ForegroundColor DarkGray
+        }
+    } else {
+        Warn '本机没扫到任何 .minecraft, 只能手动输入路径'
     }
+
+    Say ''
+    Write-Host '   也可以直接输入路径(可以指到 .minecraft、versions、或某个版本文件夹)' -ForegroundColor DarkGray
     Say ''
 
-    $pick = Read-Host '序号(回车取消)'
-    if ($pick -notmatch '^\d+$') { return $null }
-    $idx = [int]$pick - 1
-    if ($idx -lt 0 -or $idx -ge $list.Count) { return $null }
+    $ans = Read-Host '  序号 / 粘贴路径  (回车取消)'
+    if (-not $ans) { return $null }
+    $ans = $ans.Trim().Trim('"').Trim("'")
 
-    $chosen = $list[$idx].Path
+    $chosen = $null
+    if ($ans -match '^\d+$') {
+        $idx = [int]$ans - 1
+        if ($idx -lt 0 -or $idx -ge $list.Count) { return $null }
+        $chosen = $list[$idx].Path
+    } else {
+        $r = Resolve-McDirFromPath -Path $ans
+        if (-not $r.Root) {
+            throw ("这个路径不在任何有效的 .minecraft 里: $ans`n" +
+                "  要指到含 versions\ 与 libraries\ 的目录, 或者它里面的任意子目录。")
+        }
+        $chosen = $r.Root
+        if ($r.VersionName) {
+            # 用户粘的是版本目录, 顺手把版本也锁上
+            $script:VersionName = $r.VersionName
+            Info "路径是个版本目录, 已顺带锁定版本: $($r.VersionName)"
+        }
+    }
+
     Save-McDir $chosen
     Ok "已切换 PCL 实例: $chosen"
     return $chosen
@@ -1318,6 +1390,109 @@ function Select-VersionDir {
     return $picked
 }
 
+function Select-JavaInteractively {
+    <#
+        选一个 Java, 选中后写进 配置.cfg 的 JavaPath
+
+        两种来源:
+          · 扫描结果   Get-JavaGuesses 的常见安装位置 + JAVA_HOME + PATH + 配置里记的
+          · 手动输入   直接粘贴 java 路径(扫描漏掉的绿色版 JDK、多版本管理器装的、
+                       装在移动硬盘上的, 都靠这个口子)
+
+        每个候选都会跑一次 java -version 取主版本(有缓存), 所以列表能标出
+        "版本太低" —— NeoForge 1.20.5+ 需要 21+, 装着一堆老 JDK 的机器上这点很关键。
+
+        返回: 选中的 java.exe 路径; 取消返回 $null
+    #>
+    param()
+
+    Say ''
+    Say '扫描本机的 Java...'
+
+    $list = @()
+    $seen = New-Object System.Collections.Generic.HashSet[string]
+
+    $cand = @()
+    $savedJava = Get-SavedJavaPath
+    if ($savedJava) { $cand += (Resolve-JavaExe -Path $savedJava) }
+    if ($env:JAVA_HOME) { $cand += (Resolve-JavaExe -Path $env:JAVA_HOME) }
+    $cand += (Get-JavaGuesses)
+    $cmd = Get-Command java -ErrorAction SilentlyContinue
+    if ($cmd) { $cand += $cmd.Source }
+
+    foreach ($c in $cand) {
+        if (-not $c) { continue }
+        if (-not $seen.Add($c.ToLower())) { continue }
+        $major = Get-JavaMajor $c
+        $list += [pscustomobject]@{ Exe = $c; Major = $major }
+    }
+
+    # 合格的排前面
+    $list = @($list | Sort-Object @{ Expression = { if ($_.Major -ge 21) { 0 } else { 1 } } }, @{ Expression = 'Major'; Descending = $true })
+
+    $current = $script:JavaExeResolved
+    if (-not $current -and $savedJava) { $current = Resolve-JavaExe -Path $savedJava }
+
+    if ($list.Count -gt 0) {
+        Say ''
+        Write-Host '   序号  ' -NoNewline -ForegroundColor DarkCyan
+        Write-Host '版本  ' -NoNewline -ForegroundColor DarkCyan
+        Write-Host '路径' -ForegroundColor DarkCyan
+        for ($i = 0; $i -lt $list.Count; $i++) {
+            $it = $list[$i]
+            $verText = if ($it.Major -gt 0) { "$($it.Major)" } else { '?' }
+            $tag = ''
+            if ($it.Major -lt 21) { $tag = '   [版本太低, 需要 21+]' }
+            if ($current -and $it.Exe -eq $current) { $tag += '   <- 当前' }
+            Write-Host '   ' -NoNewline
+            Write-Host (Format-Display ("[{0}]" -f ($i + 1)) 6) -NoNewline -ForegroundColor DarkCyan
+            Write-Host (Format-Display $verText 6) -NoNewline -ForegroundColor White
+            Write-Host $it.Exe -NoNewline -ForegroundColor $(if ($it.Major -ge 21) { 'White' } else { 'Gray' })
+            if ($tag) { Write-Host $tag -ForegroundColor $(if ($it.Major -lt 21) { 'DarkYellow' } else { 'Cyan' }) }
+            else { Write-Host '' }
+        }
+    } else {
+        Warn '本机没扫到任何 java.exe, 只能手动输入路径'
+    }
+
+    Say ''
+    Write-Host '   也可以直接输入路径(扫描漏掉的绿色版 JDK、多版本管理器装的都靠这个)' -ForegroundColor DarkGray
+    Say ''
+
+    $ans = Read-Host '  序号 / 粘贴 java 路径  (回车取消)'
+    if (-not $ans) { return $null }
+    $ans = $ans.Trim().Trim('"').Trim("'")
+
+    $exe = $null
+    if ($ans -match '^\d+$') {
+        $idx = [int]$ans - 1
+        if ($idx -lt 0 -or $idx -ge $list.Count) { return $null }
+        $exe = $list[$idx].Exe
+    } else {
+        # 非数字: 当成路径处理
+        $exe = Resolve-JavaExe -Path $ans
+        if (-not $exe) {
+            throw ("这个路径解析不出 java.exe: $ans`n" +
+                "  要指向 java.exe、它所在的 bin 目录, 或 JDK 根目录。例如:`n" +
+                "    D:\Program Files\jdk21`n" +
+                "    D:\Program Files\jdk21\bin`n" +
+                "    D:\Program Files\jdk21\bin\java.exe")
+        }
+        Info "手动输入的路径已解析为: $exe"
+    }
+
+    $major = Get-JavaMajor $exe
+    if ($major -lt 21) {
+        Warn "选中的 Java 是版本 $major, NeoForge 1.20.5+ 需要 21+, 生成 client.jar 时会失败"
+    }
+
+    Save-JavaPath $exe
+    $script:JavaExeResolved = $exe
+    $script:JavaExeSource = '手动选择'
+    Ok "已切换 Java: $exe (版本 $major)"
+    return $exe
+}
+
 function Select-VersionInteractively {
     <#
         列出某个 PCL 实例下所有 NeoForge 版本(整合包)让用户挑
@@ -1359,13 +1534,27 @@ function Select-VersionInteractively {
             (Format-Display $mc 12) + (Format-Display $nf 12) + $libs + $mark) -ForegroundColor $color
     }
     Say ''
+    Write-Host '   也可以直接输入版本文件夹路径(在该实例之外时会提示不属于本实例)' -ForegroundColor DarkGray
+    Say ''
 
-    $pick = Read-Host '  序号(回车取消)'
-    if ($pick -notmatch '^\d+$') { return $null }
-    $idx = [int]$pick - 1
-    if ($idx -lt 0 -or $idx -ge $cands.Count) { return $null }
+    $ans = Read-Host '  序号 / 粘贴版本文件夹路径  (回车取消)'
+    if (-not $ans) { return $null }
+    $ans = $ans.Trim().Trim('"').Trim("'")
 
-    $chosen = $cands[$idx]
+    $chosen = $null
+    if ($ans -match '^\d+$') {
+        $idx = [int]$ans - 1
+        if ($idx -lt 0 -or $idx -ge $cands.Count) { return $null }
+        $chosen = $cands[$idx]
+    } else {
+        $leaf = Split-Path $ans -Leaf
+        $chosen = $cands | Where-Object { $_.Name -eq $leaf } | Select-Object -First 1
+        if (-not $chosen) {
+            throw ("这个路径下没有可操作的 NeoForge 版本: $ans`n" +
+                "  该实例下可选的版本: " + (($cands | ForEach-Object { $_.Name }) -join ', '))
+        }
+    }
+
     $script:VersionName = $chosen.Name
     Ok "已锁定整合包: $($chosen.Name)"
     return $chosen
@@ -1773,49 +1962,198 @@ function Get-BinaryPatcher {
     } catch { return $null }
 }
 
+function Resolve-JavaExe {
+    <#
+        把"用户给的 java 路径"解析成真正的 java.exe
+
+        接受三种常见写法, 免得用户还要自己拼到 bin\java.exe:
+            D:\Program Files\jdk21\bin\java.exe     完整路径
+            D:\Program Files\jdk21\bin              bin 目录
+            D:\Program Files\jdk21                  JDK/JRE 根目录
+
+        解析不到返回 $null(上层决定是报错还是跳过)
+    #>
+    param([string]$Path)
+    if (-not $Path) { return $null }
+
+    $p = $Path.Trim().Trim('"').Trim("'")
+    if (-not $p) { return $null }
+    if (-not (Test-Path -LiteralPath $p)) { return $null }
+
+    $item = Get-Item -LiteralPath $p -ErrorAction SilentlyContinue
+    if (-not $item) { return $null }
+
+    if (-not $item.PSIsContainer) {
+        # 给了文件: 必须是 java.exe(javaw.exe 也接受, 但按 java.exe 处理)
+        if ($item.Name -ieq 'java.exe' -or $item.Name -ieq 'javaw.exe') { return $item.FullName }
+        return $null
+    }
+
+    # 给了目录: 先按 bin 目录试, 再按 JDK 根试
+    foreach ($cand in @((Join-Path $p 'java.exe'), (Join-Path $p 'bin\java.exe'))) {
+        if (Test-Path -LiteralPath $cand) { return (Resolve-Path -LiteralPath $cand).Path }
+    }
+    return $null
+}
+
+function Get-JavaMajor {
+    <#
+        取 java 的主版本号(21.0.11 -> 21), 结果按路径缓存
+
+        注意: java -version 的输出走 stderr, 直接 2>&1 在 $ErrorActionPreference='Stop'
+        下会被当成终止错误抛出来, 所以临时放宽并 try 住。
+    #>
+    param([string]$Exe)
+    if (-not $Exe) { return 0 }
+    if ($script:JavaVersionCache.ContainsKey($Exe)) { return $script:JavaVersionCache[$Exe] }
+
+    $major = 0
+    $old = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $ver = (& $Exe -version 2>&1 | Out-String)
+        if ($ver -match 'version "(?<v>\d+)') { $major = [int]$Matches['v'] }
+    } catch {
+    } finally { $ErrorActionPreference = $old }
+
+    $script:JavaVersionCache[$Exe] = $major
+    return $major
+}
+
 function Get-JavaExe {
     <#
-        找可用的 Java, 要求 21+ (NeoForge 1.20.5+ 必需)
+        找可用的 Java(要求 21+, NeoForge 1.20.5+ 必需)
 
-        优先级: PCL 版本里记录的强制 Java -> JAVA_HOME -> 常见路径 -> PATH
-        注意: java -version 的输出走 stderr, 直接 2>&1 在 Stop 策略下会被当成
-        终止错误抛出来, 所以这里临时放宽策略并 try 住。
+        回退链(前面的优先):
+          1) -JavaPath 参数          显式指定, 不满足就报错(不偷偷换成别的)
+          2) 配置.cfg 的 JavaPath     上次用过的, -PickJava 会写这里
+          3) PCL 版本里的强制 Java    versions\<V>\PCL\config.json 的 InstanceForcedJava
+          4) JAVA_HOME
+          5) 常见安装路径 + PATH
+
+        -Quiet: 找不到时返回 $null 而不是抛错(给 -Status 显示用)
     #>
-    param([string]$VersionDir)
-    $candidates = @()
+    param([string]$VersionDir, [switch]$Quiet)
 
+    if ($script:JavaExeResolved) { return $script:JavaExeResolved }
+
+    $candidates = @()   # @{ Exe; From }
+
+    # 1) 显式 -JavaPath: 只认它, 不合格直接报错
+    if ($JavaPath) {
+        $exe = Resolve-JavaExe -Path $JavaPath
+        if (-not $exe) {
+            throw ("指定的 java 路径无效: $JavaPath`n" +
+                "  要指向 java.exe、其所在的 bin 目录, 或 JDK 根目录。例如:`n" +
+                "    -JavaPath `"D:\Program Files\jdk21\bin\java.exe`"`n" +
+                "    -JavaPath `"D:\Program Files\jdk21`"")
+        }
+        $major = Get-JavaMajor $exe
+        if ($major -lt 21) {
+            throw ("指定的 java 版本是 $major, 但 NeoForge 1.20.5+ 需要 21 及以上:`n" +
+                "  $exe")
+        }
+        Info "Java: 使用 -JavaPath 指定的 $exe ($major)"
+        $script:JavaExeSource = '-JavaPath'
+        $script:JavaExeResolved = $exe
+        return $exe
+    }
+
+    # 2) 配置里记着的
+    $savedJava = Get-SavedJavaPath
+    if ($savedJava) {
+        $exe = Resolve-JavaExe -Path $savedJava
+        if ($exe) { $candidates += [pscustomobject]@{ Exe = $exe; From = '配置.cfg' } }
+        else { Warn "配置里记的 JavaPath 现在不可用, 已忽略: $savedJava" }
+    }
+
+    # 3) PCL 该版本设置的强制 Java
     if ($VersionDir) {
         $cfgPath = Join-Path $VersionDir 'PCL\config.json'
         if (Test-Path -LiteralPath $cfgPath) {
             try {
                 $cfg = Read-VersionJson $cfgPath
                 if ($cfg.InstanceForcedJava -and $cfg.InstanceForcedJava.Folder) {
-                    $candidates += (Join-Path $cfg.InstanceForcedJava.Folder 'java.exe')
+                    $exe = Resolve-JavaExe -Path $cfg.InstanceForcedJava.Folder
+                    if ($exe) { $candidates += [pscustomobject]@{ Exe = $exe; From = 'PCL 版本设置' } }
                 }
             } catch { }
         }
     }
-    if ($env:JAVA_HOME) { $candidates += (Join-Path $env:JAVA_HOME 'bin\java.exe') }
-    $candidates += @(
-        'D:\Program Files\jdk21\bin\java.exe',
-        'C:\Program Files\Java\jdk-21\bin\java.exe'
-    )
-    $cmd = Get-Command java -ErrorAction SilentlyContinue
-    if ($cmd) { $candidates += $cmd.Source }
 
-    foreach ($c in $candidates) {
-        if (-not $c -or -not (Test-Path -LiteralPath $c)) { continue }
-        $major = 0
-        $old = $ErrorActionPreference
-        $ErrorActionPreference = 'Continue'
-        try {
-            $ver = (& $c -version 2>&1 | Out-String)
-            if ($ver -match 'version "(?<v>\d+)') { $major = [int]$Matches['v'] }
-        } catch {
-        } finally { $ErrorActionPreference = $old }
-        if ($major -ge 21) { return $c }
+    # 4) JAVA_HOME
+    if ($env:JAVA_HOME) {
+        $exe = Resolve-JavaExe -Path $env:JAVA_HOME
+        if ($exe) { $candidates += [pscustomobject]@{ Exe = $exe; From = 'JAVA_HOME' } }
     }
-    return $null
+
+    # 5) 常见安装位置
+    foreach ($guess in (Get-JavaGuesses)) {
+        $candidates += [pscustomobject]@{ Exe = $guess; From = '常见路径' }
+    }
+
+    # 6) PATH
+    $cmd = Get-Command java -ErrorAction SilentlyContinue
+    if ($cmd) { $candidates += [pscustomobject]@{ Exe = $cmd.Source; From = 'PATH' } }
+
+    # 逐个验版本
+    $tried = @()
+    $seen = New-Object System.Collections.Generic.HashSet[string]
+    foreach ($c in $candidates) {
+        if (-not $c.Exe) { continue }
+        if (-not $seen.Add($c.Exe.ToLower())) { continue }
+        $major = Get-JavaMajor $c.Exe
+        if ($major -ge 21) {
+            $script:JavaExeSource = $c.From
+            if (-not $Quiet) { Info "Java: $($c.Exe) ($major)  [$($c.From)]" }
+            $script:JavaExeResolved = $c.Exe
+            return $c.Exe
+        }
+        if ($major -gt 0) { $tried += "  $($c.Exe)  版本 $major ($($c.From))" }
+    }
+
+    if ($Quiet) { return $null }
+
+    $msg = "找不到可用的 Java(需要 21+, 生成 client.jar 时要用)。`n"
+    if ($tried.Count -gt 0) { $msg += "  找到但版本不够:`n" + ($tried -join "`n") + "`n" }
+    $msg += "  可以用 -JavaPath 指定, 例如:`n"
+    $msg += "    -JavaPath `"D:\Program Files\jdk21`"`n"
+    $msg += "    -PickJava    (交互选择本机已装的 Java)"
+    throw $msg
+}
+
+function Get-JavaGuesses {
+    <#
+        猜几个常见的 JDK 安装位置
+        只做一次目录列举, 不递归(扫盘会慢), 由 Get-JavaExe 再去验版本
+    #>
+    $roots = @(
+        'C:\Program Files\Java',
+        'C:\Program Files\Eclipse Adoptium',
+        'C:\Program Files\Eclipse Foundation',
+        'C:\Program Files\Microsoft',
+        'C:\Program Files\Zulu',
+        'C:\Program Files\BellSoft',
+        'C:\Program Files\Amazon Corretto',
+        'C:\Program Files\Semeru',
+        'D:\Program Files\Java',
+        'D:\Program Files',
+        (Join-Path $env:LOCALAPPDATA 'Programs\Eclipse Adoptium'),
+        (Join-Path $env:LOCALAPPDATA 'Programs\Microsoft')
+    )
+    $found = @()
+    foreach ($r in ($roots | Where-Object { $_ } | Select-Object -Unique)) {
+        if (-not (Test-Path -LiteralPath $r)) { continue }
+        # 根目录自己可能就是 JDK
+        $direct = Resolve-JavaExe -Path $r
+        if ($direct) { $found += $direct }
+        # 下一层子目录(最常见: jdk-21.0.11+9、jdk21、Microsoft-jdk-21.0.x)
+        foreach ($sub in (Get-ChildItem -LiteralPath $r -Directory -ErrorAction SilentlyContinue | Select-Object -First 40)) {
+            $exe = Resolve-JavaExe -Path $sub.FullName
+            if ($exe) { $found += $exe }
+        }
+    }
+    return @($found | Select-Object -Unique)
 }
 
 # ============================================================================
@@ -2711,6 +3049,16 @@ function Invoke-StatusAction {
     # 列宽 34: 本机实例名 "[Client]MultiIntergationPack" 显示宽度 28, 要留出间隔
     Say ("  PCL 实例  " + (Format-Display $t.InstanceName 34) + $t.Instance)
     Say ("  整合包    " + (Format-Display $t.VersionName 34) + $t.VersionDir)
+
+    # Java 这一行只在"能确定"时显示; 找不到不报错(-Quiet), 免得 -Status 也要先装好 java
+    $java = Get-JavaExe -VersionDir $version.Dir -Quiet
+    if ($java) {
+        $jm = Get-JavaMajor $java
+        $javaSrc = if ($script:JavaExeSource) { $script:JavaExeSource } else { '自动探测' }
+        Say ("  Java      " + (Format-Display $jm 34) + $java + "  [$javaSrc]")
+    } else {
+        Say ("  Java      " + (Format-Display '-' 34) + '没找到可用 Java(切版本时若要生成 client.jar 会用到)')
+    }
     Say ''
 
     $r = Test-VersionState -Root $Root -VersionDir $version.Dir -JsonPath $version.Json
@@ -2859,7 +3207,9 @@ function Invoke-Menu {
         Show-TargetBlock -Root $Root
         Write-Host ''
 
-        # 菜单项按"显示宽度"排版, 中文占两列, 所以用 Format-Display 而不是空格硬凑
+        # 菜单渲染: 三段不同颜色 —— 序号暗青、名称白、说明暗灰。
+        # 说明刻意用 · 分隔而不是对齐成第二列: 中文控制台里"显示宽度"受字体影响,
+        # 硬对齐在不同机器上会错位, 不如让颜色来承担层次。
         $items = @(
             @{ K = '[1]'; T = '查看当前状态'; D = '三处元数据是否一致、库是否齐全' },
             @{ K = '[2]'; T = '列出可切换的版本'; D = '该 MC 版本的全部 NeoForge 正式版' },
@@ -2870,14 +3220,36 @@ function Invoke-Menu {
             @{ K = '[7]'; T = '只演练不写入'; D = '看看会改什么、要不要下载' }
         )
         foreach ($it in $items) {
-            $row = '     ' + (Format-Display $it.K 6) + (Format-Display $it.T 26) + $it.D
-            Write-Host $row.TrimEnd() -ForegroundColor White
+            Write-Host '     ' -NoNewline
+            Write-Host (Format-Display $it.K 6) -NoNewline -ForegroundColor DarkCyan
+            Write-Host $it.T -NoNewline -ForegroundColor White
+            if ($it.D) { Write-Host ('   ·  ' + $it.D) -ForegroundColor DarkGray }
+            else { Write-Host '' }
         }
+
         Write-Host ''
         Write-Host '     ---- 换目标 ----' -ForegroundColor DarkCyan
-        Write-Host ('     ' + (Format-Display '[8]' 6) + (Format-Display '换 PCL 实例' 26) + '换一个 .minecraft(游戏目录)') -ForegroundColor White
-        Write-Host ('     ' + (Format-Display '[9]' 6) + (Format-Display '换整合包' 26) + '换当前实例下的某个版本') -ForegroundColor White
-        Write-Host ('     ' + (Format-Display '[0]' 6) + '退出') -ForegroundColor White
+
+        # Java 这一行带上当前值, 免得每次都要回 -Status 看
+        $javaNow = Get-JavaExe -VersionDir $null -Quiet
+        $javaDesc = if ($javaNow) { "当前 $javaNow (版本 $(Get-JavaMajor $javaNow))" } else { '没找到, 切换时若要生成 client.jar 会失败' }
+
+        $targets = @(
+            @{ K = '[8]'; T = '换 PCL 实例'; D = '换一个 .minecraft(游戏目录)' },
+            @{ K = '[9]'; T = '换整合包'; D = '换当前实例下的某个版本' },
+            @{ K = '[10]'; T = '指定 Java'; D = $javaDesc }
+        )
+        foreach ($it in $targets) {
+            Write-Host '     ' -NoNewline
+            Write-Host (Format-Display $it.K 6) -NoNewline -ForegroundColor DarkCyan
+            Write-Host $it.T -NoNewline -ForegroundColor White
+            if ($it.D) { Write-Host ('   ·  ' + $it.D) -ForegroundColor DarkGray }
+            else { Write-Host '' }
+        }
+
+        Write-Host '     ' -NoNewline
+        Write-Host (Format-Display '[0]' 6) -NoNewline -ForegroundColor DarkCyan
+        Write-Host '退出' -ForegroundColor White
         Write-Host ''
 
         $ch = Read-Host '  请选择'
@@ -2928,6 +3300,12 @@ function Invoke-Menu {
                     }
                     continue
                 }
+                '10' {
+                    # 指定 Java: 选完写 配置.cfg, 下次不用再指定
+                    $chosen = Select-JavaInteractively
+                    if ($chosen) { $script:JavaExeResolved = $chosen }
+                    continue
+                }
                 '0' { return }
                 default { continue }
             }
@@ -2947,6 +3325,16 @@ function Invoke-Menu {
 
 $exitCode = 0
 try {
+    # -PickJava 可以在任何动作之前单独跑: 选完写配置就退出, 不动版本文件
+    if ($PickJava) {
+        if ($Menu) {
+            # 菜单里不用这个开关
+        } else {
+            $null = Select-JavaInteractively
+            exit 0
+        }
+    }
+
     $root = Find-McDir
     $null = New-Context -Root $root
 

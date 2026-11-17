@@ -17,6 +17,40 @@
 | `一键部署.bat` | 部署入口。释放对应脚本至游戏目录，生成 `mod更新源.cfg` 与启动前命令 |
 | `[客户端]mod更新脚本.bat` | 同步客户端侧模组，由 PCL 启动前调用 |
 | `[服务端]mod更新脚本.bat` | 同步服务端侧模组，由开服脚本调用 |
+| `NeoForgeSwitch.ps1` | NeoForge 版本升降级。原位改写 PCL 的版本元数据与共享库，不重装整合包 |
+| `一键切换NeoForge版本.bat` | 上者的双击菜单入口（纯 ASCII，只负责把 ps1 拉起来） |
+
+### NeoForge 版本升降级
+
+`NeoForgeSwitch.ps1` 解决的是 PCL 没有入口的那件事：把某个整合包的 NeoForge 版本换掉
+（升或降），同时保留 `mods`、存档与设置。它对 PCL 的三处元数据做原位改写：
+
+| 落点 | 改什么 |
+| --- | --- |
+| `versions\<V>\<V>.json` | `--fml.*` 参数、47 个 loader 库、`mainClass` |
+| `versions\<V>\PCL\Setup.ini` | `VersionNeoForge`、`Info` |
+| `versions\<V>\PCL\config.json` | `MinecraftInstallManifest` 的 `ModLoaderVersions` |
+
+外加共享的 `libraries\`（补依赖、按需用 binarypatcher 生成 `client.jar`）。
+
+```powershell
+.\NeoForgeSwitch.ps1 -Status                      # 当前实例/整合包的版本与一致性
+.\NeoForgeSwitch.ps1 -List                        # 该 MC 版本可选的 NeoForge 版本
+.\NeoForgeSwitch.ps1 -Target 21.1.266             # 升或降
+.\NeoForgeSwitch.ps1 -Target 21.1.266 -DryRun     # 只演练
+.\NeoForgeSwitch.ps1 -Rollback                    # 回滚
+.\NeoForgeSwitch.ps1 -PickMcDir                   # 本机有多个整合包时切换目标
+.\NeoForgeSwitch.ps1 -PickVersion                 # 换同一实例下的某个版本
+.\NeoForgeSwitch.ps1 -JavaPath "D:\jdk21"         # 指定 java（生成 client.jar 时用）
+```
+
+两条纪律写在脚本里也会提示：
+
+1. **切换成功后要重启 PCL2** —— PCL 会缓存版本信息，不重启会按旧参数启动
+2. **别再对那个版本点 PCL 的"重装/更新"** —— 会按安装清单把 loader 装回去
+
+只在同一 Minecraft 版本内生效（靠 `--fml.neoFormVersion` 判定）；跨 MC 版本会被明确拒绝，
+因为那需要重跑 NeoForm 重映射链，不是改几个字段的事。
 
 ## 使用场景
 

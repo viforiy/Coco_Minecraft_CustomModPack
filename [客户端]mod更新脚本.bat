@@ -72,6 +72,9 @@ rem 系统代理, Clash 默认 127.0.0.1:7890, 直连失败时自动兜底
 set "PROXY_HOST=127.0.0.1"
 set "PROXY_PORT=7890"
 
+rem 是否跳过直连直接走系统代理, 0:先尝试直连 1:跳过直连直接走代理
+set "PROXY_FIRST=1"
+
 rem 本地包服务起始端口, 被占用则自动往后找
 set "PACK_PORT_BASE=8080"
 
@@ -407,9 +410,12 @@ echo.
 >>"%LOG_FILE%" echo ---- installer ----
 >>"%LOG_FILE%" echo PACK_URL=!PACK_URL!
 
-call :run_installer direct
-if "!INS_RC!"=="0" goto :install_ok
-%E_WARN% 直连失败, 错误码 !INS_RC!, 尝试启用 Java 系统代理
+if "%PROXY_FIRST%" == "0" (
+    call :run_installer direct
+    if "!INS_RC!"=="0" goto :install_ok
+    %E_WARN% 直连失败, 错误码 !INS_RC!, 尝试启用 Java 系统代理
+)
+
 call :run_installer sysproxy
 if "!INS_RC!"=="0" goto :install_ok
 call :proxy_ready
@@ -1438,17 +1444,22 @@ if "!PCL_CMD_DONE!"=="1" goto :eof
 set "PCL_CMD_DONE=1"
 set "PCL_FILE=!GAME_DIR!\PCL启动前命令.txt"
 rem {verpath} 是 PCL 的替换标记, 运行时展开成本版本文件夹, 命令更短
+rem 启动前指令 = 同步脚本 + 模组后处理修复脚本
+rem 注意: echo 里的两个与号必须写成转义形式, 否则 cmd 会把它当成命令分隔符, 直接执行后半段
+set "PCL_POST_NAME=[客户端]mod后处理修复脚本.cmd"
 set "PCL_CMD=call "{verpath}\!SCRIPT_NAME!" "$INST_JAVA""
+set "PCL_POST_CMD=call "{verpath}\!PCL_POST_NAME!" -Quiet"
 set "PCL_CMD_FULL=cd /d "!GAME_DIR!" ^&^& call "!SCRIPT_NAME!" "$INST_JAVA""
->"!PCL_FILE!" echo !PCL_CMD!
+set "PCL_POST_FULL=call "!PCL_POST_NAME!" -Quiet"
+>"!PCL_FILE!" echo !PCL_CMD! ^&^& !PCL_POST_CMD!
 clip < "!PCL_FILE!" >nul 2>&1
-%E_OK% 已写入 !PCL_FILE! 并尝试复制到剪贴板
+%E_OK% 已写入 !PCL_FILE! 并复制到剪贴板
 echo    %C_DIM%粘贴到 PCL - 版本设置 - 设置 - 高级选项 - 启动前执行指令%C_RST%
-echo    %C_GRN%!PCL_CMD!%C_RST%
+echo    %C_GRN%!PCL_CMD! ^&^& !PCL_POST_CMD!%C_RST%
 echo    %E_SUB% {verpath} 展开为版本文件夹, $INST_JAVA 展开为实例 Java, 路径带空格也不会断
 echo    %E_SUB% 老版本 PCL 不认 {verpath} 时, 改用下面这条
-echo    %C_DIM%!PCL_CMD_FULL!%C_RST%
->>"%LOG_FILE%" echo PCL_CMD=!PCL_CMD!
+echo    %C_DIM%!PCL_CMD_FULL! ^&^& !PCL_POST_FULL!%C_RST%
+>>"%LOG_FILE%" echo PCL_CMD=!PCL_CMD! ^&^& !PCL_POST_CMD!
 goto :eof
 
 
@@ -1551,7 +1562,7 @@ echo %C_BIG%  Coco's 整合包 - 客户端 Mod 更新脚本  %C_RST%
 echo.
 echo   用法 双击运行, 或填进 PCL 启动前执行指令
 echo        PCL - 版本设置 - 设置 - 高级选项 - 启动前执行指令
-echo        call "{verpath}\本脚本名" "$INST_JAVA"
+echo        call "{verpath}\本脚本名" "$INST_JAVA" ^&^& call "{verpath}\[客户端]mod后处理修复脚本.cmd" -Quiet
 echo.
 echo   第一个参数可选, 传 java.exe 路径则优先使用它, 对应 PCL 的 $INST_JAVA
 echo.
