@@ -3,11 +3,6 @@ filename = "multiversal-1.0.0.jar"
 side = "both"
 
 [download]
-hash-format = "sha1"
-hash = "f4bb74cfea8564df9bb2e01913830ef1c3fefbcc"
-mode = "metadata:curseforge"
-
-[update]
-[update.curseforge]
-file-id = 9349932
-project-id = 1770187
+url = "https://mediafilez.forgecdn.net/files/9349/932/multiversal-1.0.0.jar"
+hash-format = "sha256"
+hash = "688d4ce4ca9d8c788b53bcb03b0350cda29d8cbbacd6ceef34305f9b815b03ca"
