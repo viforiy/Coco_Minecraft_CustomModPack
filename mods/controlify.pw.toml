@@ -1,6 +1,6 @@
 name = "Controlify (Controller support)"
 filename = "controlify-3.0.1+lts+1.21.1-neoforge.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/DOUdJVEm/versions/RqsNKKLK/controlify-3.0.1%2Blts%2B1.21.1-neoforge.jar"
