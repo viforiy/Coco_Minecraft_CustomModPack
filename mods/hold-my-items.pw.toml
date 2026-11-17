@@ -1,8 +1,0 @@
-name = "Hold My Items"
-filename = "HMI 4.3 - 1.21.(1).jar"
-side = "client"
-
-[download]
-url = "https://cdn.modrinth.com/data/AP8rDDLS/versions/QvoJWaYG/HMI%204.3%20-%201.21.%281%29.jar?mr_download_reason=standalone&mr_game_version=1.21.1&mr_loader=fabric"
-hash-format = "sha256"
-hash = "8fef74afd768f25621bd63b8df35c22f5b9eb35cdec91a360c6335e41890e24c"
