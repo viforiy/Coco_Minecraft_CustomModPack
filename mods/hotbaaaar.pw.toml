@@ -1,0 +1,13 @@
+name = "HotBaaaar"
+filename = "HorBaaaar-0.2.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/3Fg1pSC5/versions/AuK1RRdk/HorBaaaar-0.2.0.jar"
+hash-format = "sha512"
+hash = "c7bfb9f105eeb1ee94712a496006b679d7056a95f2b7109c5e2558b577850dafa454aa80b0b706c0e592ce3411c342f84c0e8fbb2e658e572de2948fc74e173f"
+
+[update]
+[update.modrinth]
+mod-id = "3Fg1pSC5"
+version = "AuK1RRdk"
