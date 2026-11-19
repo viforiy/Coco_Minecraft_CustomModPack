@@ -1,8 +1,0 @@
-name = "MuoniumPlayer"
-filename = "MuoniumPlayer-1.21.1-neoforge-2.5.2.jar"
-side = "client"
-
-[download]
-url = "https://xafj-cu11.baidupcs.com/file/d2f92f69bn66b405601c930038d16da5?bkt=en-26dcfdb4e5ee1a49053c4d8d7aaf57ae2ecc8f676189cf3864232d241e86babf40f1c885ce4e4d90&fid=1103011551928-250528-387269886375452&time=1794916477&sign=FDTAXUbGERQlBHSKfWqiu-DCb740ccc5511e5e8fedcff06b081203-y6mM6puVgRDqoYTes%2FRg%2BzalSXY%3D&to=419&size=13766697&sta_dx=13766697&sta_cs=149&sta_ft=jar&sta_ct=2&sta_mt=2&fm2=MH%2CBaoding%2CAnywhere%2C%2C%E5%9B%9B%E5%B7%9D%2Ccnc&ctime=1794458427&mtime=1794458427&dt3=149&resv0=-1&resv1=0&resv2=rlim&resv3=5&resv4=13766697&vuk=2638536393&iv=2&vl=0&htype=&randtype=&tkbind_id=0&newver=1&newfm=1&secfm=1&flow_ver=3&pkey=en-ade607642c2b2101fa0208c7e185d50c65d6e4af020f9dd0f8baa0998642e3e79e3129cf77c4c367&expires=8h&rt=sh&r=280488360&vbdid=3636350470&fin=MuoniumPlayer-1.21.1-neoforge-2.5.2.jar&fn=MuoniumPlayer-1.21.1-neoforge-2.5.2.jar&bflag=419&rtype=1&clienttype=0&dp-logid=523415187277011517&dp-callid=0.1&hps=1&tsl=0&csl=0&fsl=-1&csign=pvaiH67I%2ByZW9fQSbfPGBkIwGhk%3D&so=0&ut=1&uter=4&serv=0&uc=2246652891&ti=fb6dd0596e887f344b6f4b7299849a5f0eed6a130ee59ed7305a5e1275657320&hflag=30&from_type=1&adg=c_63b9b9c475bb48aa3f810d727d5c73ec&reqlabel=250528_f_0d379c25691f1db02fd2dff786ffd19a_-1_e575750a3c4aa01749b9e79faa454520&fpath=%E6%88%91%E7%9A%84%E8%B5%84%E6%BA%90%2FMuoniumPlayer&by=themis&resvsflag=1-0-0-1-1-1&hasfgid=M&ccn=CN"
-hash-format = "sha256"
-hash = "de5cc9d74c80235ce9c5306b0828f6895905dd35b54f51307e257cac870269b3"
