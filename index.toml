@@ -805,6 +805,10 @@ hash = "35acdf433fe8f8599f59975e848efdb717663c2c471d3a5dc18743799795a736"
 metafile = true
 
 [[files]]
+file = "mods/neo-voxy-0.4.0-NHblock714.jar"
+hash = "baf6e8db4a35f34576ccfcc0739f2fad6ad12a9931757b3963b761ed3c9b9317"
+
+[[files]]
 file = "mods/no-chat-reports.pw.toml"
 hash = "3e86a1a80bf53b25d6533cd1e1d5f9bdfd6fc288ffb826b2d27389181c799f99"
 metafile = true
