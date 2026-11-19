@@ -5,8 +5,24 @@ file = "Coco's Script/NeoForgeSwitch.ps1"
 hash = "be11a3f622ed14262412b201b1e0ea21cd9605e41e66782d3e5c9d3e08d2f84d"
 
 [[files]]
+file = "Coco's Script/[客户端]mod后处理修复脚本.bat"
+hash = "afd1613b27d0456b64848caa1f70a9759a28be76aba77da8319df02c6a00ffba"
+
+[[files]]
+file = "Coco's Script/[客户端]mod更新脚本.bat"
+hash = "e4a8dc445b25bd3f207638e7ed3c5f912cc62545aca0908b20108a1359fad32a"
+
+[[files]]
+file = "Coco's Script/fix-grand-teleport-version.bat"
+hash = "f3e914848662a6a0aa8db8409ab67b7d68aff190fc838aebb8d09c1adec40584"
+
+[[files]]
 file = "Coco's Script/fix-grand-teleport-version.ps1"
 hash = "1962030e1f62fa36249ea068c6a9f556498304bd923667b2456cf900a725abd6"
+
+[[files]]
+file = "Coco's Script/mcef-block-download.bat"
+hash = "ed35fc0771c34c1ceac2df7db30441ff37f5e1aba566b7d96fbb7ee250cb214e"
 
 [[files]]
 file = "Coco's Script/mcef-block-download.ps1"
@@ -21,12 +37,28 @@ file = "Coco's Script/mod更新源.cfg"
 hash = "b9cc7654c5e050058dbbb8a4afef4c318060b0dfa8356d71889c131055a94524"
 
 [[files]]
+file = "Coco's Script/mod裁剪脚本.bat"
+hash = "6d73cd400da6e2c958408103678cf5adbb20d133b40d929ad637407fde0a595d"
+
+[[files]]
+file = "Coco's Script/muoniumconfig-patch-soundevent.bat"
+hash = "e1ccd7c9368ceaf8aebab3c0f89ce22487606bca2574dba75dc466425b5c7eff"
+
+[[files]]
 file = "Coco's Script/muoniumconfig-patch-soundevent.ps1"
 hash = "5a1a14038a42a87f4fb74608872c4bc734b152aa970de12b8edf6d5a740e0553"
 
 [[files]]
+file = "Coco's Script/packwiz-manage-grand-teleport.bat"
+hash = "b75267fc19780b19bd47e2380ff4a7c1edcae3dc2301432508e49db02d465443"
+
+[[files]]
 file = "Coco's Script/packwiz-manage-grand-teleport.ps1"
 hash = "dfb00382b4059b75d93f50b168bc150617fdadf0b00258e1316307aea3057913"
+
+[[files]]
+file = "Coco's Script/一键切换NeoForge版本.bat"
+hash = "244461a7a94f0910749acfa9caf04e68502868cb7bb763301940bdaede668948"
 
 [[files]]
 file = "Coco's Script/脚本说明.txt"
