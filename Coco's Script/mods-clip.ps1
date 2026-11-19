@@ -1,6 +1,6 @@
 ﻿#requires -version 5
 <#
-  [客户端]mod前置裁剪脚本.ps1 —— packwiz 元数据前置裁剪(客户端模组分类 + 按人删减)
+  mods-clip.ps1 —— packwiz 元数据裁剪(客户端模组分类 + 按人删减), 入口是 mod裁剪脚本.bat
 
   位置与角色:
     和 [客户端]mod后处理修复脚本 配对使用.
@@ -34,13 +34,13 @@
 
   用法:
     双击 = 交互挑选(带编号的客户端模组列表, 输入编号即裁剪/恢复), 结束后按提示退出
-    [客户端]mod前置裁剪脚本.bat -Quiet            静默按清单执行, 给 PCL 启动前指令链用
-    [客户端]mod前置裁剪脚本.bat -List             只打印分类, 什么都不改
-    [客户端]mod前置裁剪脚本.bat -Pick             交互挑选后再执行
-    [客户端]mod前置裁剪脚本.bat -Profile 小霸王    换一份清单(清单文件名带后缀)
-    [客户端]mod前置裁剪脚本.bat -Reset            备份旧清单后重新生成(全部保留)
-    [客户端]mod前置裁剪脚本.bat -Plan             只出报告与清单, 不删任何文件
-    [客户端]mod前置裁剪脚本.bat --help            看全部参数
+    mod裁剪脚本.bat -Quiet            静默按清单执行, 给 PCL 启动前指令链用
+    mod裁剪脚本.bat -List             只打印分类, 什么都不改
+    mod裁剪脚本.bat -Pick             交互挑选后再执行
+    mod裁剪脚本.bat -Profile 小霸王    换一份清单(清单文件名带后缀)
+    mod裁剪脚本.bat -Reset            备份旧清单后重新生成(全部保留)
+    mod裁剪脚本.bat -Plan             只出报告与清单, 不删任何文件
+    mod裁剪脚本.bat --help            看全部参数
 
   可写进 mod更新源.cfg 的键(优先级低于命令行参数):
     PRE_TRIM=1              0 = 更新脚本不再调用前置裁剪
@@ -402,7 +402,7 @@ function New-TrimListText($entries, [string]$modeName, [string]$metaRoot) {
     [void]$sb.AppendLine('#')
     [void]$sb.AppendLine('# 用法: 想在本机不装的模组, 把对应行行首的 # 去掉, 变成 " - " 开头; 想装回来就重新加回 #')
     [void]$sb.AppendLine('#       行首 -  裁剪(本机不装)      行首 +  强制保留      行首 #  注释 / 保留')
-    [void]$sb.AppendLine('#       改完保存, 下次启动游戏自动生效; 也可以直接跑 [客户端]mod前置裁剪脚本.bat -Pick 交互挑')
+    [void]$sb.AppendLine('#       改完保存, 下次启动游戏自动生效; 也可以直接跑 mod裁剪脚本.bat -Pick 交互挑')
     [void]$sb.AppendLine('#')
     [void]$sb.AppendLine('# 模式 MODE   blacklist = 只裁 - 的行(默认)   whitelist = 仅客户端模组只留 + 的行')
     [void]$sb.AppendLine("#  当前模式    $modeName")
@@ -527,20 +527,20 @@ function Repair-IndexHash([string]$dir) {
 # ===========================================================================
 function Show-Help {
     Write-Host ''
-    Write-Host "  Coco's 整合包 - 客户端 Mod 前置裁剪脚本 v$script:VER"
+    Write-Host "  Coco's 整合包 - 客户端 Mod 裁剪 (mods-clip) v$script:VER"
     Write-Host ''
     Write-Host '  作用: 在 packwiz 安装器跑之前, 把元数据里的客户端模组按清单删减掉,'
     Write-Host '        并删掉 mods 里已经落地的 jar, 让不同机器只装自己想要的那部分.'
     Write-Host ''
     Write-Host '  常用'
-    Write-Host '    双击 bat                      交互挑选(带编号列表), 选完直接生效'
-    Write-Host '    bat -Quiet                    静默按清单执行, 给 PCL 启动前指令链用'
-    Write-Host '    bat -List                     只打印分类, 不动元数据与 mods'
-    Write-Host '    bat -Pick                     交互挑选后再执行'
-    Write-Host '    bat -Plan                     只出清单与报告, 不删文件'
-    Write-Host '    bat -Reset                    备份旧清单后重新生成(全部保留)'
-    Write-Host '    bat -Profile 小霸王            用另一份清单: [客户端]模组裁剪清单.小霸王.txt'
-    Write-Host '    bat --help                    看这份帮助'
+    Write-Host '    双击 mod裁剪脚本.bat          交互挑选(带编号列表), 选完直接生效'
+    Write-Host '    mod裁剪脚本.bat -Quiet        静默按清单执行, 给 PCL 启动前指令链用'
+    Write-Host '    mod裁剪脚本.bat -List         只打印分类, 不动元数据与 mods'
+    Write-Host '    mod裁剪脚本.bat -Pick         交互挑选后再执行'
+    Write-Host '    mod裁剪脚本.bat -Plan         只出清单与报告, 不删文件'
+    Write-Host '    mod裁剪脚本.bat -Reset        备份旧清单后重新生成(全部保留)'
+    Write-Host '    mod裁剪脚本.bat -Profile 小霸王  用另一份清单: [客户端]模组裁剪清单.小霸王.txt'
+    Write-Host '    mod裁剪脚本.bat --help        看这份帮助'
     Write-Host ''
     Write-Host '  给更新脚本内部调用(一般不用手写)'
     Write-Host '    -InPlace -MetaDir <目录> -GameDir <目录> -CacheRoot <目录> -Packwiz <exe>'
@@ -664,7 +664,7 @@ if ($git -and (Test-Path -LiteralPath (Join-Path $metaRoot '.git'))) {
 
 # --- 分类 ---
 Say ''
-Say "Coco's 整合包 - 客户端 Mod 前置裁剪"
+Say "Coco's 整合包 - 客户端 Mod 裁剪 (mods-clip)"
 Say '  ------------------------------------------------------------------'
 Say "  整合包目录 : $($script:GAME)"
 Say "  元数据目录 : $metaRoot$(if ($gitHead) { "  (git $gitHead)" })"
@@ -970,7 +970,7 @@ Write-EntrySection $sb "仅服务端模组 ($($serverList.Count))  —— 客户
 [void]$sb.AppendLine('-' * 78)
 [void]$sb.AppendLine("  1) 打开 $ListFile")
 [void]$sb.AppendLine('  2) 想不装的模组, 把该行行首的 # 去掉(变成 - 开头); 想装回来再加回 #')
-[void]$sb.AppendLine('  3) 保存后下次启动游戏自动生效; 也可以双击 [客户端]mod前置裁剪脚本.bat -Pick 交互挑')
+[void]$sb.AppendLine('  3) 保存后下次启动游戏自动生效; 也可以双击 mod裁剪脚本.bat -Pick 交互挑')
 [void]$sb.AppendLine('  4) 裁剪只作用于本机 mods 与本次安装, 元数据仓和别人的整合包不受影响')
 if ($script:Warns.Count -gt 0) {
     [void]$sb.AppendLine('')

@@ -5,10 +5,6 @@ file = "Coco's Script/NeoForgeSwitch.ps1"
 hash = "be11a3f622ed14262412b201b1e0ea21cd9605e41e66782d3e5c9d3e08d2f84d"
 
 [[files]]
-file = "Coco's Script/[客户端]mod前置裁剪脚本.ps1"
-hash = "ae0cfe18b7c00ec53847fb54290d97b1840916b5f5cd5da424c520e2c224d7d8"
-
-[[files]]
 file = "Coco's Script/fix-grand-teleport-version.ps1"
 hash = "1962030e1f62fa36249ea068c6a9f556498304bd923667b2456cf900a725abd6"
 
@@ -17,12 +13,24 @@ file = "Coco's Script/mcef-block-download.ps1"
 hash = "ecfbdbcf1d8e4ffa5560059c76c5528dd8ce7ea60d7155cf0ae0612cf4c2b45f"
 
 [[files]]
+file = "Coco's Script/mods-clip.ps1"
+hash = "3d626d5a01297185276bc96e095190a29917b95de624621fe81ba35ca6790b75"
+
+[[files]]
+file = "Coco's Script/mod更新源.cfg"
+hash = "b9cc7654c5e050058dbbb8a4afef4c318060b0dfa8356d71889c131055a94524"
+
+[[files]]
 file = "Coco's Script/muoniumconfig-patch-soundevent.ps1"
 hash = "5a1a14038a42a87f4fb74608872c4bc734b152aa970de12b8edf6d5a740e0553"
 
 [[files]]
 file = "Coco's Script/packwiz-manage-grand-teleport.ps1"
 hash = "dfb00382b4059b75d93f50b168bc150617fdadf0b00258e1316307aea3057913"
+
+[[files]]
+file = "Coco's Script/脚本说明.txt"
+hash = "124e78be7e31dfd40efd341d4b5dfd419e62b032230b38fec277e3b90c037fdb"
 
 [[files]]
 file = "mods/accessible-step.pw.toml"

@@ -1183,14 +1183,13 @@ goto :eof
 
 
 :trim_client
-rem 前置裁剪: 调 [客户端]mod前置裁剪脚本.bat, 在安装器之前裁掉清单里的客户端模组
+rem 前置裁剪: 调 mod裁剪脚本.bat(逻辑在 mods-clip.ps1), 在安装器之前裁掉清单里的客户端模组
 rem 会改 META_DIR 里的 metafile 与 GAME_DIR\mods, 索引在本步之后重建
 set "TRIM_HARD_FAIL="
 set "TRIM_RC=0"
 set "TRIM_APPLY=1"
-set "PRE_BAT=%SCRIPT_DIR%\[客户端]mod前置裁剪脚本.bat"
-set "PRE_PS1=%SCRIPT_DIR%\[客户端]mod前置裁剪脚本.ps1"
-
+set "PRE_BAT=%SCRIPT_DIR%\mod裁剪脚本.bat"
+set "PRE_PS1=%SCRIPT_DIR%\mods-clip.ps1"
 if not "!PRE_TRIM!"=="1" (
     %E_INFO% 配置里关掉了前置裁剪, 跳过
     exit /b 0
@@ -1204,14 +1203,16 @@ if "!HAVE_META!"=="0" (
     exit /b 0
 )
 
-rem 本机还没部署就从元数据仓里带的那一份拷出来, 仓库里 bat 与 ps1 成对同名
-if not exist "!PRE_BAT!" if exist "!META_DIR!\[客户端]mod前置裁剪脚本.bat" (
-    copy /y "!META_DIR!\[客户端]mod前置裁剪脚本.bat" "!PRE_BAT!" >nul 2>&1
-    copy /y "!META_DIR!\[客户端]mod前置裁剪脚本.ps1" "!PRE_PS1!" >nul 2>&1
-    if exist "!PRE_BAT!" %E_INFO% 已从元数据仓取到前置裁剪脚本
+rem 本机还没部署就从元数据仓里带的那一份拷出来(仓库里 bat 与 ps1 成对)
+rem 注意: 2026-11 这两个文件改过名, 旧名 [客户端]mod前置裁剪脚本.* 已废弃, 不再兜底
+if not exist "!PRE_BAT!" if exist "!META_DIR!\mod裁剪脚本.bat" (
+    copy /y "!META_DIR!\mod裁剪脚本.bat" "!PRE_BAT!" >nul 2>&1
+    copy /y "!META_DIR!\mods-clip.ps1" "!PRE_PS1!" >nul 2>&1
+    if exist "!PRE_BAT!" %E_INFO% 已从元数据仓取到 mod裁剪脚本.bat
 )
 if not exist "!PRE_BAT!" (
-    %E_INFO% 本机没部署前置裁剪脚本, 跳过客户端模组裁剪
+    %E_INFO% 本机没部署 mod裁剪脚本.bat, 跳过客户端模组裁剪
+    %E_SUB% 需要裁剪就把 mod裁剪脚本.bat 与 mods-clip.ps1 一起放进 !SCRIPT_DIR!
     exit /b 0
 )
 if not exist "!PRE_PS1!" (
@@ -1503,10 +1504,34 @@ rem ---------------------------------------------------------------------------
 :relocate_scripts
 set "RELOC_COUNT=0"
 set "RELOC_DIFF=0"
+set "RELOC_DROPPED=0"
 if /i "!SCRIPT_DIR!"=="!GAME_DIR!" exit /b 0
+rem 改过名的旧文件(见 脚本说明.txt 变更记录): 只要新名字的那份在, 旧名字的直接删
+rem 两种来路都要管: packwiz 装进脚本目录的(仓库里还没改名时会有), 以及根目录残留的
+call :drop_deprecated "[客户端]mod前置裁剪脚本.ps1" "mods-clip.ps1"
+call :drop_deprecated "[客户端]mod前置裁剪脚本.bat" "mod裁剪脚本.bat"
 for %%F in ("!GAME_DIR!\*.ps1" "!GAME_DIR!\*.bat") do call :relocate_one "%%~fF" "%%~nxF"
+if not "!RELOC_DROPPED!"=="0" echo    %C_YEL%丢弃 !RELOC_DROPPED! 个改过名的旧文件%C_RST%
 if "!RELOC_COUNT!"=="0" exit /b 0
 %E_OK% 脚本归位 !RELOC_COUNT! 个 -> !SCRIPT_DIR!
+exit /b 0
+
+:drop_deprecated
+rem %1 已废弃的旧文件名, %2 对应的新文件名
+rem 新名字那份存在时, 旧名字在 脚本目录 / 实例根目录 里出现几次就删几次
+set "_dn=!SCRIPT_DIR!\%~2"
+if not exist "!_dn!" exit /b 0
+call :drop_one "!SCRIPT_DIR!\%~1"
+call :drop_one "!GAME_DIR!\%~1"
+exit /b 0
+
+:drop_one
+if not exist "%~1" exit /b 0
+del /q "%~1" >nul 2>&1
+if exist "%~1" exit /b 0
+set /a RELOC_DROPPED+=1
+echo    %E_SUB% 删除改名前的旧文件 %~nx1
+>>"%LOG_FILE%" echo drop deprecated %~1
 exit /b 0
 
 :relocate_one
@@ -1757,7 +1782,7 @@ echo   前置裁剪, 各项也可写进 mod更新源.cfg
 echo        PRE_TRIM=1        0 关掉前置裁剪, 完全不裁客户端模组
 echo        PRE_FAIL_HARD=0   1 = 裁剪失败就中止本次更新
 echo        裁剪清单在整合包目录 [客户端]模组裁剪清单.txt, 行首 - 裁剪, 行首 + 强制保留
-echo        前置裁剪脚本 [客户端]mod前置裁剪脚本.bat, 单独双击可交互挑选
+echo        裁剪脚本 mod裁剪脚本.bat(逻辑在 mods-clip.ps1), 单独双击可交互挑选
 echo.
 echo   环境变量覆盖, 可选
 echo        COCO_GAME_DIR         整合包目录, 默认脚本所在目录
