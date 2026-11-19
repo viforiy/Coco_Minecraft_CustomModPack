@@ -92,6 +92,10 @@ $script:JarBytes = 0
 $script:Changed = 0
 $script:RefreshState = '未执行'
 
+# 清单与报告跟脚本放一起(Coco's Script\), 不往整合包根目录丢文件
+$script:SCRIPT_DIR = $PSScriptRoot
+if ($script:SCRIPT_DIR) { $script:SCRIPT_DIR = $script:SCRIPT_DIR.TrimEnd('\') }
+
 $LIST_DEFAULT = '[客户端]模组裁剪清单.txt'
 $REPORT_NAME = '[客户端]模组分类报告.txt'
 
@@ -269,6 +273,69 @@ function Test-LibraryName([string]$name, [string]$file) {
     return $false
 }
 
+function Repair-MixedUtf8([string]$path) {
+    # 逐字节处理: 能按 UTF-8 解开就原样保留, 解不开的就当 GBK 双字节重新编码成 UTF-8
+    # 只用于本机元数据缓存的自救; 返回 $true 表示确实改写过
+    $b = [IO.File]::ReadAllBytes($path)
+    $out = New-Object System.Collections.Generic.List[byte]
+    $strict = New-Object System.Text.UTF8Encoding($false, $true)
+    $gbk = [Text.Encoding]::GetEncoding(936)
+    $i = 0
+    $changed = $false
+    while ($i -lt $b.Length) {
+        $c = $b[$i]
+        $len = 0
+        if ($c -lt 0x80) { $len = 1 }
+        elseif ($c -ge 0xC2 -and $c -le 0xDF) { $len = 2 }
+        elseif ($c -ge 0xE0 -and $c -le 0xEF) { $len = 3 }
+        elseif ($c -ge 0xF0 -and $c -le 0xF4) { $len = 4 }
+        if ($len -gt 0 -and ($i + $len) -le $b.Length) {
+            $seg = [byte[]]$b[$i..($i + $len - 1)]
+            $ok = $true
+            try { $null = $strict.GetString($seg) } catch { $ok = $false }
+            if ($ok) {
+                foreach ($x in $seg) { $out.Add($x) }
+                $i += $len
+                continue
+            }
+        }
+        if (($i + 1) -lt $b.Length) {
+            $pair = [byte[]]$b[$i..($i + 1)]
+            $s = $gbk.GetString($pair)
+            if (-not $s.Contains([string][char]0xFFFD)) {
+                foreach ($x in [Text.Encoding]::UTF8.GetBytes($s)) { $out.Add($x) }
+                $i += 2
+                $changed = $true
+                continue
+            }
+        }
+        $out.Add($b[$i])
+        $i++
+    }
+    if ($changed) { [IO.File]::WriteAllBytes($path, $out.ToArray()) }
+    return $changed
+}
+
+function Get-IndexHostedFiles([string]$root) {
+    # 从 index.toml 里捞"直接托管在元数据仓"的 mods/ 文件(不是 metafile, 没有 .pw.toml)
+    # 这些 jar 没有 side 字段, packwiz 会照装两端, 但一样应该能被裁剪
+    $out = New-Object System.Collections.ArrayList
+    $idx = Join-Path $root 'index.toml'
+    if (-not (Test-Path -LiteralPath $idx)) { return $out }
+    $text = Read-TextAuto $idx
+    foreach ($blk in ($text -split '\[\[files\]\]')) {
+        $m = [regex]::Match($blk, '(?m)^[ \t]*file[ \t]*=[ \t]*"([^"]+)"')
+        if (-not $m.Success) { continue }
+        $rel = $m.Groups[1].Value
+        if (-not $rel.ToLowerInvariant().StartsWith('mods/')) { continue }
+        if ($rel.ToLowerInvariant().EndsWith('.pw.toml')) { continue }
+        if ($blk -match '(?m)^[ \t]*metafile[ \t]*=[ \t]*true') { continue }
+        $optional = [bool]($blk -match '(?m)^[ \t]*optional[ \t]*=[ \t]*true')
+        [void]$out.Add((New-Object psobject -Property @{ Rel = $rel; Optional = $optional }))
+    }
+    return $out
+}
+
 function Get-ModEntries([string]$root) {
     $out = New-Object System.Collections.ArrayList
     $modsMeta = Join-Path $root 'mods'
@@ -327,6 +394,38 @@ function Get-ModEntries([string]$root) {
         }
         [void]$out.Add($obj)
     }
+
+    # 直接托管在元数据仓里的 mods/*.jar: 没有 .pw.toml, 也没有 side
+    # 归到"托管"一档, 一样进清单、一样能裁
+    foreach ($hf in (Get-IndexHostedFiles $root)) {
+        $abs = Join-Path $root ($hf.Rel.Replace('/', '\'))
+        if (-not (Test-Path -LiteralPath $abs)) { continue }
+        $leaf = Split-Path -Leaf $hf.Rel
+        $hostName = [IO.Path]::GetFileNameWithoutExtension($leaf)
+        $hInstalled = $false
+        $hSize = 0
+        $hPath = ''
+        $hCand = Join-Path $modsDir $leaf
+        if (Test-Path -LiteralPath $hCand) {
+            $hInstalled = $true
+            $hPath = $hCand
+            $hSize = (Get-Item -LiteralPath $hCand).Length
+        }
+        [void]$out.Add((New-Object psobject -Property @{
+            Rel       = $hf.Rel
+            Name      = $hostName
+            FileName  = $leaf
+            Side      = 'hosted'
+            Link      = ''
+            Optional  = $hf.Optional
+            Installed = $hInstalled
+            Size      = [long]$hSize
+            JarPath   = $hPath
+            IsLib     = (Test-LibraryName $hostName $leaf)
+            Trim      = $false
+            Reason    = ''
+        }))
+    }
     return $out
 }
 
@@ -334,6 +433,7 @@ function Get-SideText([string]$side) {
     switch ($side) {
         'client' { return '仅客户端' }
         'server' { return '仅服务端' }
+        'hosted' { return '托管' }
         default { return '双端' }
     }
 }
@@ -360,9 +460,11 @@ function Get-LineInfo([string]$line) {
         $body = $body.Substring(1).Trim()
     }
     if (-not $body) { return $null }
-    if (-not $body.ToLowerInvariant().EndsWith('.pw.toml')) { return $null }
+    # 既认 mods/*.pw.toml, 也认直接托管在仓里的 mods/*.jar 这类文件
+    # 只认"像文件名"的条目, 免得把说明文字当成裁剪项
     $norm = $body.Replace('\', '/').TrimStart('/')
     if (-not $norm.ToLowerInvariant().StartsWith('mods/')) { $norm = 'mods/' + $norm }
+    if ((Split-Path -Leaf $norm) -notmatch '\.(pw\.toml|jar|zip|disabled)$') { return $null }
     return New-Object psobject -Property @{ Id = $norm; Marker = $marker }
 }
 
@@ -418,7 +520,8 @@ function New-TrimListText($entries, [string]$modeName, [string]$metaRoot) {
     $groups = @(
         @{ Side = 'client'; Title = '仅客户端模组 (可以放心裁)' },
         @{ Side = 'both'; Title = '双端模组 (服务端也用, 裁掉只影响本机)' },
-        @{ Side = 'server'; Title = '仅服务端模组 (客户端安装器本来就跳过)' }
+        @{ Side = 'server'; Title = '仅服务端模组 (客户端安装器本来就跳过)' },
+        @{ Side = 'hosted'; Title = '托管在元数据仓的模组 (没有 side, 两端都会装)' }
     )
     foreach ($g in $groups) {
         $items = @($entries | Where-Object { $_.Side -eq $g.Side } | Sort-Object Name)
@@ -438,26 +541,49 @@ function New-TrimListText($entries, [string]$modeName, [string]$metaRoot) {
     return $sb.ToString()
 }
 
-function Add-MissingToTrimList([string]$path, $entries, [string]$modeName) {
+function Update-TrimList([string]$path, $entries) {
+    # 维护清单: 元数据里已经没有的条目清掉(只清没启用的), 新出现的模组补在末尾
+    # 返回 @{ Added = n; Pruned = n }
     $state = Read-TrimList $path
-    $missing = @($entries | Where-Object { -not $state.Mention.ContainsKey($_.Rel) } | Sort-Object Side, Name)
-    if ($missing.Count -eq 0) { return 0 }
-    $sb = New-Object System.Text.StringBuilder
-    [void]$sb.AppendLine('')
-    [void]$sb.AppendLine("# ----- 新增模组, 由脚本自动追加 $script:Now ($($missing.Count) 个) -----")
-    foreach ($e in $missing) {
-        $sizeTxt = '未安装'
-        if ($e.Installed) { $sizeTxt = Get-FileSizeText $e.Size }
-        $flag = ''
-        if ($e.Optional) { $flag += ' [可选]' }
-        if ($e.IsLib) { $flag += ' [疑似前置库]' }
-        [void]$sb.AppendLine('#- ' + $e.Rel + '  | ' + $e.Name + ' | ' + $e.FileName + ' | ' + $sizeTxt + ' [' + (Get-SideText $e.Side) + ']' + $flag)
+    $known = @{}
+    foreach ($e in $entries) { $known[$e.Rel] = 1 }
+
+    $added = 0
+    $pruned = 0
+    $kept = New-Object System.Collections.ArrayList
+    foreach ($line in $state.Lines) {
+        $info = Get-LineInfo $line
+        if ($info -and -not $known.ContainsKey($info.Id)) {
+            if ($info.Marker -eq '-' -or $info.Marker -eq '+') {
+                # 启用中的条目即使元数据里没了也保留, 交给后面的"找不到"告警提示
+                [void]$kept.Add($line)
+            } else {
+                $pruned++
+            }
+            continue
+        }
+        [void]$kept.Add($line)
     }
-    $old = ''
-    if (Test-Path -LiteralPath $path) { $old = Read-TextAuto $path }
-    if (-not $old.EndsWith("`n")) { $old += "`r`n" }
-    Write-Text936 $path ($old + $sb.ToString())
-    return $missing.Count
+
+    $missing = @($entries | Where-Object { -not $state.Mention.ContainsKey($_.Rel) } | Sort-Object Side, Name)
+    if ($missing.Count -gt 0) {
+        [void]$kept.Add('')
+        [void]$kept.Add("# ----- 新增模组, 由脚本自动追加 $script:Now ($($missing.Count) 个) -----")
+        foreach ($e in $missing) {
+            $sizeTxt = '未安装'
+            if ($e.Installed) { $sizeTxt = Get-FileSizeText $e.Size }
+            $flag = ''
+            if ($e.Optional) { $flag += ' [可选]' }
+            if ($e.IsLib) { $flag += ' [疑似前置库]' }
+            [void]$kept.Add('#- ' + $e.Rel + '  | ' + $e.Name + ' | ' + $e.FileName + ' | ' + $sizeTxt + ' [' + (Get-SideText $e.Side) + ']' + $flag)
+            $added++
+        }
+    }
+
+    if ($added -gt 0 -or $pruned -gt 0) {
+        Write-Text936 $path (($kept -join "`r`n") + "`r`n")
+    }
+    return New-Object psobject -Property @{ Added = $added; Pruned = $pruned }
 }
 
 function Set-TrimMarker([string]$path, [string]$id, [bool]$trim) {
@@ -548,8 +674,8 @@ function Show-Help {
     Write-Host '    -SkipMods -SkipRefresh -Hard    细分开关'
     Write-Host ''
     Write-Host '  文件'
-    Write-Host "    裁剪清单  $script:GAME\$script:LISTNAME"
-    Write-Host "    分类报告  $script:GAME\$REPORT_NAME"
+    Write-Host "    裁剪清单  $script:SCRIPT_DIR\$script:LISTNAME"
+    Write-Host "    分类报告  $script:SCRIPT_DIR\$REPORT_NAME"
     Write-Host "    机器可读  $($script:CACHE)\mod-classify.tsv"
     Write-Host "    日志      $($script:CACHE)\logs\pre-trim-*.log"
     Write-Host ''
@@ -598,7 +724,14 @@ Log "CACHE=$($script:CACHE)"
 Log "MODEARGS inPlace=$InPlace plan=$Plan list=$ListOnly pick=$Pick quiet=$Quiet"
 
 # --- 配置文件 ---
-if (-not $CfgFile) { $CfgFile = Join-Path $script:GAME 'mod更新源.cfg' }
+if (-not $CfgFile) {
+    # 配置跟脚本放一起(Coco's Script\), 实例根目录放一份也认
+    $cfgInScript = Join-Path $script:SCRIPT_DIR 'mod更新源.cfg'
+    $cfgInGame = Join-Path $script:GAME 'mod更新源.cfg'
+    if (Test-Path -LiteralPath $cfgInScript) { $CfgFile = $cfgInScript }
+    elseif (Test-Path -LiteralPath $cfgInGame) { $CfgFile = $cfgInGame }
+    else { $CfgFile = $cfgInScript }
+}
 $cfg = Read-CfgFile $CfgFile
 Log "CFG=$CfgFile keys=$($cfg.Keys.Count)"
 
@@ -610,7 +743,7 @@ if ($ProfileName -and $ProfileName -ne 'default') {
 } else {
     $script:LISTNAME = $LIST_DEFAULT
 }
-if (-not $ListFile) { $ListFile = Join-Path $script:GAME $script:LISTNAME }
+if (-not $ListFile) { $ListFile = Join-Path $script:SCRIPT_DIR $script:LISTNAME }
 $script:LISTNAME = Split-Path -Leaf $ListFile
 
 if (-not $Mode) { $Mode = (Get-CfgValue $cfg 'PRE_TRIM_MODE' 'blacklist').ToLowerInvariant() }
@@ -656,6 +789,28 @@ if ($Fresh) {
     }
 }
 
+# --- 元数据体检: *.pw.toml 必须是合法 UTF-8, 否则 packwiz-installer 会拿 ParseError 直接失败 ---
+# (历史上出现过 GBK 存的 filename 混进 UTF-8 文件里, 一装就报 disallowed character 65533)
+$badMeta = @()
+foreach ($mf in (Get-ChildItem -LiteralPath $metaRoot -Recurse -File -Filter '*.pw.toml' -ErrorAction SilentlyContinue)) {
+    try {
+        $null = (New-Object System.Text.UTF8Encoding($false, $true)).GetString([System.IO.File]::ReadAllBytes($mf.FullName))
+        continue
+    } catch { }
+    $rel = $mf.FullName.Substring($metaRoot.Length).TrimStart('\').Replace('\', '/')
+    # 能就地救回来就先救: 逐字节按 UTF-8 解, 解不动的按 GBK 双字节转成 UTF-8
+    # 只改本机缓存里的这份(git 每次都会重置回来), 索引由更新脚本随后重建
+    if (Repair-MixedUtf8 $mf.FullName) {
+        $script:Changed = 1
+        Warn "元数据里混进了 GBK 字节, 已在本机缓存自动转成 UTF-8: $rel  —— 仓库里那份还是坏的, 请一并修掉"
+    } else {
+        $badMeta += $rel
+    }
+}
+foreach ($bm in $badMeta) {
+    Warn "元数据不是合法 UTF-8, 安装器会 ParseError: $bm  —— 用编辑器另存为 UTF-8 再 packwiz refresh"
+}
+
 $gitHead = ''
 if ($git -and (Test-Path -LiteralPath (Join-Path $metaRoot '.git'))) {
     $r = Invoke-Native $git @('-C', $metaRoot, 'rev-parse', '--short', 'HEAD')
@@ -681,9 +836,26 @@ if ($entries.Count -eq 0) {
 $clientList = @($entries | Where-Object { $_.Side -eq 'client' } | Sort-Object Name)
 $bothList = @($entries | Where-Object { $_.Side -eq 'both' } | Sort-Object Name)
 $serverList = @($entries | Where-Object { $_.Side -eq 'server' } | Sort-Object Name)
-Log "classify total=$($entries.Count) client=$($clientList.Count) both=$($bothList.Count) server=$($serverList.Count)"
+$hostedList = @($entries | Where-Object { $_.Side -eq 'hosted' } | Sort-Object Name)
+Log "classify total=$($entries.Count) client=$($clientList.Count) both=$($bothList.Count) server=$($serverList.Count) hosted=$($hostedList.Count)"
 
-Info ("元数据 $($entries.Count) 个: 仅客户端 $($clientList.Count) / 双端 $($bothList.Count) / 仅服务端 $($serverList.Count)")
+$countLine = "元数据 $($entries.Count) 个: 仅客户端 $($clientList.Count) / 双端 $($bothList.Count) / 仅服务端 $($serverList.Count)"
+if ($hostedList.Count -gt 0) { $countLine += " / 托管 $($hostedList.Count)" }
+Info $countLine
+
+# --- 同一个落盘 jar 被多份元数据引用(metafile 与托管 jar 撞车)时提示 ---
+$byTarget = @{}
+foreach ($e in $entries) {
+    if (-not $e.FileName) { continue }
+    $k = $e.FileName.ToLowerInvariant()
+    if (-not $byTarget.ContainsKey($k)) { $byTarget[$k] = New-Object System.Collections.ArrayList }
+    [void]$byTarget[$k].Add($e)
+}
+foreach ($k in $byTarget.Keys) {
+    if ($byTarget[$k].Count -le 1) { continue }
+    $rels = @($byTarget[$k] | ForEach-Object { $_.Rel }) -join ' 和 '
+    Warn "同一个 jar 被多份元数据引用: $($byTarget[$k][0].FileName) -> $rels (要裁就两行一起裁)"
+}
 
 # --- 清单: 生成 / 合并 / 重置 ---
 if ($Reset) {
@@ -701,8 +873,9 @@ if ($Reset) {
     Info '默认全部保留; 想裁哪个就去掉该行行首的 #'
     Log "list seeded -> $ListFile"
 } else {
-    $added = Add-MissingToTrimList $ListFile $entries $Mode
-    if ($added -gt 0) { Info "清单里补上了新增的 $added 个模组(默认保留)" }
+    $upd = Update-TrimList $ListFile $entries
+    if ($upd.Pruned -gt 0) { Info "清单里清掉了 $($upd.Pruned) 条过期条目(元数据里已经没有这个文件)" }
+    if ($upd.Added -gt 0) { Info "清单里补上了新增的 $($upd.Added) 个模组(默认保留)" }
 }
 
 $state = Read-TrimList $ListFile
@@ -930,6 +1103,7 @@ if ($pwz) { [void]$sb.AppendLine("packwiz       : $pwz") }
 [void]$sb.AppendLine("仅客户端 side=client: $($clientList.Count)")
 [void]$sb.AppendLine("双端     side=both   : $($bothList.Count)")
 [void]$sb.AppendLine("仅服务端 side=server: $($serverList.Count)")
+[void]$sb.AppendLine("托管     仓内文件    : $($hostedList.Count)")
 [void]$sb.AppendLine("本次裁剪            : $($toTrim.Count)")
 [void]$sb.AppendLine("已删 jar            : $($script:JarDeleted) 个, $(Get-FileSizeText $script:JarBytes)")
 [void]$sb.AppendLine('')
@@ -966,6 +1140,7 @@ function Write-EntrySection($builder, [string]$title, $items, [string]$note) {
 Write-EntrySection $sb "仅客户端模组 ($($clientList.Count))  —— 裁剪最安全的一档" $clientList '裁掉后本机没有这个功能, 服务端与其它人不受影响'
 Write-EntrySection $sb "双端模组 ($($bothList.Count))  —— 服务端也装, 裁掉只影响本机" $bothList '清单里也给了这些行, 想裁必须自己写 - 开头'
 Write-EntrySection $sb "仅服务端模组 ($($serverList.Count))  —— 客户端安装器本来就跳过" $serverList '平时不用管, 出现在这里只是为了分类完整'
+Write-EntrySection $sb "托管在元数据仓的模组 ($($hostedList.Count))  —— 没有 .pw.toml, 也没有 side" $hostedList 'jar 直接放在仓库 mods\ 下, packwiz 照装两端; 裁掉只影响本机, 想恢复把该行改回 # 开头'
 [void]$sb.AppendLine('怎么改')
 [void]$sb.AppendLine('-' * 78)
 [void]$sb.AppendLine("  1) 打开 $ListFile")
@@ -978,7 +1153,7 @@ if ($script:Warns.Count -gt 0) {
     [void]$sb.AppendLine('-' * 78)
     foreach ($w in $script:Warns) { [void]$sb.AppendLine("  ! $w") }
 }
-$reportPath = Join-Path $script:GAME $REPORT_NAME
+$reportPath = Join-Path $script:SCRIPT_DIR $REPORT_NAME
 Write-Text936 $reportPath $sb.ToString()
 Ok "分类报告: $reportPath"
 

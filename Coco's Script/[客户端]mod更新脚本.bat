@@ -10,7 +10,7 @@ rem       机器没装 git 时自动改为下载仓库 zip 压缩包
 rem       元数据仓地址可写在同目录 mod更新源.cfg 里, 不用改本脚本
 rem    3) 准备 packwiz.exe, 缺失时从 nightly 构建下载
 rem    4) packwiz refresh, 重建 index.toml 与哈希
-rem    4.5) 前置裁剪, 按 [客户端]模组裁剪清单.txt 把客户端模组从元数据里删减掉
+rem    4.5) 裁剪, 按 [客户端]模组裁剪清单.txt(在脚本目录)把客户端模组从元数据里删减掉
 rem    5) packwiz serve, 本地包服务提供 pack.toml / index.toml
 rem    6) packwiz-installer-bootstrap, 按元数据同步 mods 目录
 rem    6.5) 脚本归位, 把 packwiz 装到实例根目录的 ps1/bat 挪进 Coco's Script
@@ -94,7 +94,7 @@ set "FAIL_HARD=0"
 rem 是否在更新前备份 mods 目录: 1=打包 zip 到缓存目录, 0=不备份
 set "BACKUP_MODS=0"
 
-rem 前置裁剪: 1 = 装 mods 之前按清单裁剪客户端模组, 清单在整合包目录 [客户端]模组裁剪清单.txt
+rem 前置裁剪: 1 = 装 mods 之前按清单裁剪客户端模组, 清单在脚本目录 [客户端]模组裁剪清单.txt
 rem           只改本机的元数据与 mods, 不碰元数据仓远端; 脚本没部署或裁剪失败时只告警
 set "PRE_TRIM=1"
 rem 裁剪失败是否让本次更新失败: 1=中止, 0=仅告警, 照常装模组
@@ -1227,7 +1227,7 @@ if not "!HAVE_PACKWIZ!"=="1" (
 )
 
 if "!TRIM_APPLY!"=="1" (
-    echo    %C_DIM%裁剪清单:%C_RST% !GAME_DIR!\[客户端]模组裁剪清单.txt
+    echo    %C_DIM%裁剪清单:%C_RST% !SCRIPT_DIR!\[客户端]模组裁剪清单.txt
     call "!PRE_BAT!" -Quiet -InPlace -MetaDir "!META_DIR!" -GameDir "!GAME_DIR!" -CacheRoot "!CACHE_ROOT!" -Packwiz "!PACKWIZ_EXE!"
     set "TRIM_RC=!errorlevel!"
 ) else (
@@ -1781,7 +1781,7 @@ echo.
 echo   前置裁剪, 各项也可写进 mod更新源.cfg
 echo        PRE_TRIM=1        0 关掉前置裁剪, 完全不裁客户端模组
 echo        PRE_FAIL_HARD=0   1 = 裁剪失败就中止本次更新
-echo        裁剪清单在整合包目录 [客户端]模组裁剪清单.txt, 行首 - 裁剪, 行首 + 强制保留
+echo        裁剪清单在脚本目录 [客户端]模组裁剪清单.txt, 行首 - 裁剪, 行首 + 强制保留
 echo        裁剪脚本 mod裁剪脚本.bat(逻辑在 mods-clip.ps1), 单独双击可交互挑选
 echo.
 echo   环境变量覆盖, 可选

@@ -10,7 +10,7 @@ hash = "afd1613b27d0456b64848caa1f70a9759a28be76aba77da8319df02c6a00ffba"
 
 [[files]]
 file = "Coco's Script/[客户端]mod更新脚本.bat"
-hash = "e4a8dc445b25bd3f207638e7ed3c5f912cc62545aca0908b20108a1359fad32a"
+hash = "a98e13a37691e992dff09be127e6516af4de03077e9aceec373ab38c1a0373c2"
 
 [[files]]
 file = "Coco's Script/fix-grand-teleport-version.bat"
@@ -30,7 +30,7 @@ hash = "ecfbdbcf1d8e4ffa5560059c76c5528dd8ce7ea60d7155cf0ae0612cf4c2b45f"
 
 [[files]]
 file = "Coco's Script/mods-clip.ps1"
-hash = "3d626d5a01297185276bc96e095190a29917b95de624621fe81ba35ca6790b75"
+hash = "0730fc632ead426a365a394e4b9c555439322ba3b2712091c4b6b86667cefb48"
 
 [[files]]
 file = "Coco's Script/mod裁剪脚本.bat"
@@ -58,7 +58,7 @@ hash = "244461a7a94f0910749acfa9caf04e68502868cb7bb763301940bdaede668948"
 
 [[files]]
 file = "Coco's Script/脚本说明.txt"
-hash = "124e78be7e31dfd40efd341d4b5dfd419e62b032230b38fec277e3b90c037fdb"
+hash = "867a483178cfe90e8f6bc3b9e34c4814c24d96abb0bbb1ad8faa7a93c8dcf51e"
 
 [[files]]
 file = "mods/MuoniumPlayer-1.21.1-neoforge-2.5.2.jar"
@@ -1170,7 +1170,7 @@ metafile = true
 
 [[files]]
 file = "shaderpacks/eclipse-shader-voxy.pw.toml"
-hash = "afe8a8c22d45b9886a9b727a6fecb9aedbcd1f13a723276612a5a132ee6af26a"
+hash = "e79a136c960ce1313ff7dedd80e5b47880fe320b18d318d826c076cefe273dc6"
 metafile = true
 
 [[files]]
