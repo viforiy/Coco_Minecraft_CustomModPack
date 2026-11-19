@@ -9,6 +9,7 @@ rem       机器没装 git 时自动改为下载仓库 zip 压缩包
 rem       元数据仓地址可写在同目录 mod更新源.cfg 里, 不用改本脚本
 rem    3) 准备 packwiz.exe, 缺失时从 nightly 构建下载
 rem    4) packwiz refresh, 重建 index.toml 与哈希
+rem    4.5) 前置裁剪, 按 [客户端]模组裁剪清单.txt 把客户端模组从元数据里删减掉
 rem    5) packwiz serve, 本地包服务提供 pack.toml / index.toml
 rem    6) packwiz-installer-bootstrap, 按元数据同步 mods 目录
 rem    7) 汇总 mods 变动
@@ -84,6 +85,12 @@ set "FAIL_HARD=0"
 rem 是否在更新前备份 mods 目录: 1=打包 zip 到缓存目录, 0=不备份
 set "BACKUP_MODS=0"
 
+rem 前置裁剪: 1 = 装 mods 之前按清单裁剪客户端模组, 清单在整合包目录 [客户端]模组裁剪清单.txt
+rem           只改本机的元数据与 mods, 不碰元数据仓远端; 脚本没部署或裁剪失败时只告警
+set "PRE_TRIM=1"
+rem 裁剪失败是否让本次更新失败: 1=中止, 0=仅告警, 照常装模组
+set "PRE_FAIL_HARD=0"
+
 rem 元数据同步方式: auto = 优先 git, 没装 git 或同步失败时改用 zip 压缩包
 rem                 git  = 只用 git
 rem                 zip  = 只用 zip, 适合机器上没有 git 的情况
@@ -100,6 +107,8 @@ if exist "%~dp0mod更新源.cfg" (
         if /i "%%a"=="PROXY_PORT" set "PROXY_PORT=%%b"
         if /i "%%a"=="BACKUP_MODS" set "BACKUP_MODS=%%b"
         if /i "%%a"=="FAIL_HARD" set "FAIL_HARD=%%b"
+        if /i "%%a"=="PRE_TRIM" set "PRE_TRIM=%%b"
+        if /i "%%a"=="PRE_FAIL_HARD" set "PRE_FAIL_HARD=%%b"
     )
 )
 rem 以下为环境变量覆盖, 便于多实例或调试
@@ -334,6 +343,17 @@ if /i "!PACK_SOURCE!"=="remote" (
         set "FAIL_MSG=索引刷新失败, 错误码 !REF_RC!"
         goto :fail
     )
+)
+
+rem ===========================================================================
+rem  步骤 4.5 - 前置裁剪: 按清单把客户端模组从元数据里删减掉
+rem  必须排在安装器之前, 裁掉的东西这一轮就不会落地
+rem ===========================================================================
+call :trim_client
+if defined TRIM_HARD_FAIL (
+    set "FAIL_STEP=4"
+    set "FAIL_MSG=!TRIM_HARD_FAIL!"
+    goto :fail
 )
 
 rem ===========================================================================
@@ -1120,6 +1140,82 @@ if "!REF_RC!"=="0" (
 goto :eof
 
 
+:trim_client
+rem 前置裁剪: 调 [客户端]mod前置裁剪脚本.bat, 在安装器之前裁掉清单里的客户端模组
+rem 会改 META_DIR 里的 metafile 与 GAME_DIR\mods, 索引在本步之后重建
+set "TRIM_HARD_FAIL="
+set "TRIM_RC=0"
+set "TRIM_APPLY=1"
+set "PRE_BAT=%~dp0[客户端]mod前置裁剪脚本.bat"
+set "PRE_PS1=%~dp0[客户端]mod前置裁剪脚本.ps1"
+
+if not "!PRE_TRIM!"=="1" (
+    %E_INFO% 配置里关掉了前置裁剪, 跳过
+    exit /b 0
+)
+if /i "!PACK_SOURCE!"=="remote" (
+    %E_INFO% 远端包模式, 元数据不在本机, 跳过前置裁剪
+    exit /b 0
+)
+if "!HAVE_META!"=="0" (
+    %E_INFO% 没有本地元数据, 跳过前置裁剪
+    exit /b 0
+)
+
+rem 本机还没部署就从元数据仓里带的那一份拷出来, 仓库里 bat 与 ps1 成对同名
+if not exist "!PRE_BAT!" if exist "!META_DIR!\[客户端]mod前置裁剪脚本.bat" (
+    copy /y "!META_DIR!\[客户端]mod前置裁剪脚本.bat" "!PRE_BAT!" >nul 2>&1
+    copy /y "!META_DIR!\[客户端]mod前置裁剪脚本.ps1" "!PRE_PS1!" >nul 2>&1
+    if exist "!PRE_BAT!" %E_INFO% 已从元数据仓取到前置裁剪脚本
+)
+if not exist "!PRE_BAT!" (
+    %E_INFO% 本机没部署前置裁剪脚本, 跳过客户端模组裁剪
+    exit /b 0
+)
+if not exist "!PRE_PS1!" (
+    %E_WARN% 缺少 !PRE_PS1!, 跳过客户端模组裁剪
+    exit /b 0
+)
+
+rem 没有 packwiz 就重建不了索引, 这时删掉 metafile 会让安装器 404, 所以只出报告
+if not "!HAVE_PACKWIZ!"=="1" (
+    set "TRIM_APPLY=0"
+    %E_WARN% 没有 packwiz, 本次只生成裁剪报告, 不改元数据
+)
+
+if "!TRIM_APPLY!"=="1" (
+    echo    %C_DIM%裁剪清单:%C_RST% !GAME_DIR!\[客户端]模组裁剪清单.txt
+    call "!PRE_BAT!" -Quiet -InPlace -MetaDir "!META_DIR!" -GameDir "!GAME_DIR!" -CacheRoot "!CACHE_ROOT!" -Packwiz "!PACKWIZ_EXE!"
+    set "TRIM_RC=!errorlevel!"
+) else (
+    call "!PRE_BAT!" -Quiet -InPlace -Plan -MetaDir "!META_DIR!" -GameDir "!GAME_DIR!" -CacheRoot "!CACHE_ROOT!" -Packwiz "!PACKWIZ_EXE!"
+    set "TRIM_RC=0"
+)
+>>"%LOG_FILE%" echo trim rc=!TRIM_RC! apply=!TRIM_APPLY!
+
+rem 只有真删了 metafile 才需要重建索引, 没裁任何东西就不重复刷
+set "TRIM_CHANGED=0"
+if exist "!CACHE_ROOT!\pre-trim-state.cfg" (
+    for /f "usebackq tokens=1,* delims==" %%a in ("!CACHE_ROOT!\pre-trim-state.cfg") do (
+        if /i "%%a"=="CHANGED" set "TRIM_CHANGED=%%b"
+    )
+)
+if "!TRIM_APPLY!"=="1" if "!TRIM_CHANGED!"=="1" (
+    call :refresh_index
+    if not "!REF_RC!"=="0" (
+        set "TRIM_RC=1"
+        %E_WARN% 裁剪后索引刷新失败, 错误码 !REF_RC!
+    )
+)
+
+if not "!TRIM_RC!"=="0" (
+    set "TRIM_HARD_FAIL=前置裁剪返回 !TRIM_RC!"
+    if "%PRE_FAIL_HARD%"=="1" exit /b 0
+    %E_WARN% 前置裁剪返回 !TRIM_RC!, 已按原样继续, 本次不少装模组
+    set "TRIM_HARD_FAIL="
+)
+exit /b 0
+
 rem ---------------------------------------------------------------------------
 rem  端口选择与残留服务清理
 rem ---------------------------------------------------------------------------
@@ -1446,7 +1542,7 @@ set "PCL_FILE=!GAME_DIR!\PCL启动前命令.txt"
 rem {verpath} 是 PCL 的替换标记, 运行时展开成本版本文件夹, 命令更短
 rem 启动前指令 = 同步脚本 + 模组后处理修复脚本
 rem 注意: echo 里的两个与号必须写成转义形式, 否则 cmd 会把它当成命令分隔符, 直接执行后半段
-set "PCL_POST_NAME=[客户端]mod后处理修复脚本.cmd"
+set "PCL_POST_NAME=[客户端]mod后处理修复脚本.bat"
 set "PCL_CMD=call "{verpath}\!SCRIPT_NAME!" "$INST_JAVA""
 set "PCL_POST_CMD=call "{verpath}\!PCL_POST_NAME!" -Quiet"
 set "PCL_CMD_FULL=cd /d "!GAME_DIR!" ^&^& call "!SCRIPT_NAME!" "$INST_JAVA""
@@ -1562,9 +1658,15 @@ echo %C_BIG%  Coco's 整合包 - 客户端 Mod 更新脚本  %C_RST%
 echo.
 echo   用法 双击运行, 或填进 PCL 启动前执行指令
 echo        PCL - 版本设置 - 设置 - 高级选项 - 启动前执行指令
-echo        call "{verpath}\本脚本名" "$INST_JAVA" ^&^& call "{verpath}\[客户端]mod后处理修复脚本.cmd" -Quiet
+echo        call "{verpath}\本脚本名" "$INST_JAVA" ^&^& call "{verpath}\[客户端]mod后处理修复脚本.bat" -Quiet
 echo.
 echo   第一个参数可选, 传 java.exe 路径则优先使用它, 对应 PCL 的 $INST_JAVA
+echo.
+echo   前置裁剪, 各项也可写进 mod更新源.cfg
+echo        PRE_TRIM=1        0 关掉前置裁剪, 完全不裁客户端模组
+echo        PRE_FAIL_HARD=0   1 = 裁剪失败就中止本次更新
+echo        裁剪清单在整合包目录 [客户端]模组裁剪清单.txt, 行首 - 裁剪, 行首 + 强制保留
+echo        前置裁剪脚本 [客户端]mod前置裁剪脚本.bat, 单独双击可交互挑选
 echo.
 echo   环境变量覆盖, 可选
 echo        COCO_GAME_DIR         整合包目录, 默认脚本所在目录
