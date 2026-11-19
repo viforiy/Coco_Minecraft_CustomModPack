@@ -1,4 +1,5 @@
 @echo off
+chcp 936 >nul 2>&1
 rem ============================================================================
 rem  Coco's 整合包 - 客户端 Mod 更新脚本 - PCL 启动前执行
 rem
@@ -12,14 +13,16 @@ rem    4) packwiz refresh, 重建 index.toml 与哈希
 rem    4.5) 前置裁剪, 按 [客户端]模组裁剪清单.txt 把客户端模组从元数据里删减掉
 rem    5) packwiz serve, 本地包服务提供 pack.toml / index.toml
 rem    6) packwiz-installer-bootstrap, 按元数据同步 mods 目录
+rem    6.5) 脚本归位, 把 packwiz 装到实例根目录的 ps1/bat 挪进 Coco's Script
 rem    7) 汇总 mods 变动
 rem    8) 生成 PCL 启动前执行命令
 rem
+rem  位置: 本脚本放在 <整合包目录>\Coco's Script\ 里, 实例目录自动取上一级;
+rem        脚本直接放整合包根目录(老布局)也能跑, 靠 INSTANCE_DIR 判断
 rem  用法: PCL - 版本设置 - 设置 - 高级选项 - 启动前执行指令
-rem        cd /d "本文件夹" ^&^& call "本脚本名"
+rem        直接粘贴本脚本生成的 PCL启动前命令.txt 内容即可(每次跑完自动刷新)
 rem ============================================================================
 
-chcp 936 >nul 2>&1
 rem 开启 VT 转义, 用于彩色输出, 老系统上无效但无副作用
 for /f "delims=" %%A in ('echo prompt $E^| cmd') do set "ESC=%%A"
 setlocal enabledelayedexpansion
@@ -45,6 +48,12 @@ if not "%~1"=="" set "COCO_JAVA=%~1"
 if /i "%~1"=="--help" goto :usage
 if /i "%~1"=="/?" goto :usage
 if /i "%~1"=="-h" goto :usage
+
+rem ---------------------------------------------------------------------------
+rem  零. 目录探测: 脚本目录 / 实例目录 / 实例内相对目录
+rem  主流程和 :usage 都要用, 所以抽成子过程 :detect_dirs
+rem ---------------------------------------------------------------------------
+call :detect_dirs
 
 rem ---------------------------------------------------------------------------
 rem  一. 配置区, 一般只需要改这里
@@ -96,10 +105,13 @@ rem                 git  = 只用 git
 rem                 zip  = 只用 zip, 适合机器上没有 git 的情况
 set "META_SOURCE=auto"
 
-rem 同目录的 mod更新源.cfg 会覆盖上面的源配置, 由一键部署生成, 手改也生效
+rem 同目录(或实例根目录)的 mod更新源.cfg 会覆盖上面的源配置, 由一键部署生成, 手改也生效
 rem 这样换元数据仓不用改脚本, 脚本升级时也不会把源配置冲掉
-if exist "%~dp0mod更新源.cfg" (
-    for /f "usebackq eol=# tokens=1,* delims==" %%a in ("%~dp0mod更新源.cfg") do (
+set "CFG_FILE="
+if exist "%SCRIPT_DIR%\mod更新源.cfg" set "CFG_FILE=%SCRIPT_DIR%\mod更新源.cfg"
+if not defined CFG_FILE if exist "%INSTANCE_DIR%\mod更新源.cfg" set "CFG_FILE=%INSTANCE_DIR%\mod更新源.cfg"
+if defined CFG_FILE (
+    for /f "usebackq eol=# tokens=1,* delims==" %%a in ("%CFG_FILE%") do (
         if /i "%%a"=="PACK_GIT_URL" set "PACK_GIT_URL=%%b"
         if /i "%%a"=="PACK_GIT_BRANCH" set "PACK_GIT_BRANCH=%%b"
         if /i "%%a"=="META_SOURCE" set "META_SOURCE=%%b"
@@ -125,12 +137,13 @@ rem  二. 路径与运行期变量
 rem ---------------------------------------------------------------------------
 
 cd /d "%~dp0"
-set "_GAME_DIR_ARG=%~dp0"
-if "%_GAME_DIR_ARG:~-1%"=="\" set "_GAME_DIR_ARG=%_GAME_DIR_ARG:~0,-1%"
-if not defined GAME_DIR set "GAME_DIR=%_GAME_DIR_ARG%"
+if not defined GAME_DIR set "GAME_DIR=%INSTANCE_DIR%"
 if "%GAME_DIR:~-1%"=="\" set "GAME_DIR=%GAME_DIR:~0,-1%"
 
 set "SCRIPT_NAME=%~nx0"
+rem PCL 启动前命令里不带盘符, 只带实例内相对目录, 例如 Coco's Script\[客户端]mod更新脚本.bat
+set "SCRIPT_CALL_NAME=%SCRIPT_NAME%"
+if defined SCRIPT_REL set "SCRIPT_CALL_NAME=%SCRIPT_REL%\%SCRIPT_NAME%"
 set "PROXY_URL=http://%PROXY_HOST%:%PROXY_PORT%"
 
 set "META_DIR=%CACHE_ROOT%\meta"
@@ -169,6 +182,8 @@ set "MODS_COUNT_AFTER=0"
 set "MODS_ADDED=0"
 set "MODS_REMOVED=0"
 set "PCL_CMD_DONE=0"
+set "RELOC_COUNT=0"
+set "RELOC_DIFF=0"
 set "FAIL_STEP=0"
 
 title Coco's 整合包 - Mod 更新
@@ -207,6 +222,9 @@ if exist "%CURL%" set "CURL_OK=1"
 >>"%LOG_FILE%" echo GAME_DIR=%GAME_DIR%
 >>"%LOG_FILE%" echo CACHE_ROOT=%CACHE_ROOT%
 >>"%LOG_FILE%" echo PACK_SOURCE=%PACK_SOURCE%
+>>"%LOG_FILE%" echo SCRIPT_DIR=%SCRIPT_DIR%
+>>"%LOG_FILE%" echo INSTANCE_DIR=%INSTANCE_DIR%
+>>"%LOG_FILE%" echo CFG=%CFG_FILE%
 
 echo.
 echo %C_BIG%  Coco's 整合包 - 客户端 Mod 更新  %C_RST%
@@ -454,6 +472,11 @@ goto :fail
 :install_ok
 
 rem ===========================================================================
+rem  步骤 6.5 - 脚本归位
+rem ===========================================================================
+call :relocate_scripts
+
+rem ===========================================================================
 rem  步骤 7/8 - 汇总变动
 rem ===========================================================================
 call :step "汇总 mods 变动"
@@ -494,6 +517,25 @@ exit /b 0
 rem ###########################################################################
 rem  子过程区
 rem ###########################################################################
+
+:detect_dirs
+rem 脚本统一放在 <整合包目录>\Coco's Script\ 里, 所以实例目录默认是脚本目录的上一级;
+rem 若脚本就放在整合包根目录(老布局), 实例目录 = 脚本目录自己
+set "SCRIPT_DIR=%~dp0"
+if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+set "INSTANCE_DIR=%SCRIPT_DIR%"
+for %%D in ("%SCRIPT_DIR%\..") do set "INSTANCE_DIR=%%~fD"
+if exist "%SCRIPT_DIR%\mods" set "INSTANCE_DIR=%SCRIPT_DIR%"
+if defined COCO_GAME_DIR set "INSTANCE_DIR=%COCO_GAME_DIR%"
+rem 脚本目录在实例内的相对名, 只在真的是子目录时非空, 用于 PCL 启动前命令
+set "SCRIPT_REL="
+set "_SCRIPT_PARENT=%SCRIPT_DIR%"
+for %%D in ("%SCRIPT_DIR%\..") do set "_SCRIPT_PARENT=%%~fD"
+if /i "%_SCRIPT_PARENT%"=="%INSTANCE_DIR%" for %%D in ("%SCRIPT_DIR%") do set "SCRIPT_REL=%%~nxD"
+rem 用相对目录拼出命令里要写的脚本名
+set "SCRIPT_CALL_NAME=%~nx0"
+if defined SCRIPT_REL set "SCRIPT_CALL_NAME=%SCRIPT_REL%\%~nx0%"
+goto :eof
 
 :make_dirs
 for %%D in ("%CACHE_ROOT%" "%META_DIR%" "%LOG_DIR%" "%TMP_DIR%" "%BAK_DIR%" "%JRE_DIR%" "%TOOLS_DIR%") do (
@@ -1146,8 +1188,8 @@ rem 会改 META_DIR 里的 metafile 与 GAME_DIR\mods, 索引在本步之后重建
 set "TRIM_HARD_FAIL="
 set "TRIM_RC=0"
 set "TRIM_APPLY=1"
-set "PRE_BAT=%~dp0[客户端]mod前置裁剪脚本.bat"
-set "PRE_PS1=%~dp0[客户端]mod前置裁剪脚本.ps1"
+set "PRE_BAT=%SCRIPT_DIR%\[客户端]mod前置裁剪脚本.bat"
+set "PRE_PS1=%SCRIPT_DIR%\[客户端]mod前置裁剪脚本.ps1"
 
 if not "!PRE_TRIM!"=="1" (
     %E_INFO% 配置里关掉了前置裁剪, 跳过
@@ -1454,6 +1496,50 @@ exit /b !INS_RC!
 
 
 rem ---------------------------------------------------------------------------
+rem  脚本归位: 元数据仓里的 ps1 会被 packwiz 装到实例根目录, 而脚本统一住 Coco's Script
+rem  本步把根目录多出来的脚本挪进脚本目录(同名以新的一份覆盖), 根目录保持干净
+rem  脚本本来就在根目录(老布局)时整步跳过
+rem ---------------------------------------------------------------------------
+:relocate_scripts
+set "RELOC_COUNT=0"
+set "RELOC_DIFF=0"
+if /i "!SCRIPT_DIR!"=="!GAME_DIR!" exit /b 0
+for %%F in ("!GAME_DIR!\*.ps1" "!GAME_DIR!\*.bat") do call :relocate_one "%%~fF" "%%~nxF"
+if "!RELOC_COUNT!"=="0" exit /b 0
+%E_OK% 脚本归位 !RELOC_COUNT! 个 -> !SCRIPT_DIR!
+exit /b 0
+
+:relocate_one
+rem %1 源文件, %2 文件名
+rem 规则: 脚本目录里没有 -> 直接把包里这份收下; 已有且内容相同 -> 删根目录的副本;
+rem       已有但内容不同 -> 保留脚本目录里的(那是本机部署/改过的版本), 只提示一句
+set "_r_src=%~1"
+set "_r_name=%~2"
+if not exist "!_r_src!" exit /b 0
+if /i "!_r_src!"=="!SCRIPT_DIR!\!_r_name!" exit /b 0
+if not exist "!SCRIPT_DIR!\!_r_name!" (
+    copy /y "!_r_src!" "!SCRIPT_DIR!\!_r_name!" >nul 2>&1
+    if exist "!SCRIPT_DIR!\!_r_name!" (
+        set /a RELOC_COUNT+=1
+        echo    %E_SUB% 收下 !_r_name!
+    )
+) else (
+    fc /b "!_r_src!" "!SCRIPT_DIR!\!_r_name!" >nul 2>&1
+    if errorlevel 1 (
+        set /a RELOC_DIFF+=1
+        echo    %E_SUB% %C_YEL%!_r_name! 与脚本目录里的版本不同, 保留脚本目录的%C_RST%
+    ) else (
+        set /a RELOC_COUNT+=1
+        echo    %E_SUB% 归位 !_r_name!
+    )
+)
+del /q "!_r_src!" >nul 2>&1
+if exist "!_r_src!" exit /b 0
+>>"%LOG_FILE%" echo relocate !_r_src! -^> !SCRIPT_DIR!\!_r_name!
+exit /b 0
+
+
+rem ---------------------------------------------------------------------------
 rem  mods 快照 / 差异 / 汇总 / 备份
 rem ---------------------------------------------------------------------------
 :snapshot_mods
@@ -1517,6 +1603,8 @@ if not "!MODS_REMOVED!"=="0" (
     >>"%LOG_FILE%" echo ---- removed !MODS_REMOVED!
     type "%TMP_DIR%\mods_removed.txt" >>"%LOG_FILE%"
 )
+if not "!RELOC_COUNT!"=="0" echo    %C_GRN%脚本归位:%C_RST% !RELOC_COUNT! 个 -^> !SCRIPT_DIR!
+if not "!RELOC_DIFF!"=="0" echo    %C_YEL%有 !RELOC_DIFF! 个脚本与包里的不同, 已保留本机版本%C_RST%
 if "!MODS_ADDED!"=="0" if "!MODS_REMOVED!"=="0" %E_OK% mods 已是最新, 无新增无移除
 goto :eof
 
@@ -1542,10 +1630,12 @@ set "PCL_FILE=!GAME_DIR!\PCL启动前命令.txt"
 rem {verpath} 是 PCL 的替换标记, 运行时展开成本版本文件夹, 命令更短
 rem 启动前指令 = 同步脚本 + 模组后处理修复脚本
 rem 注意: echo 里的两个与号必须写成转义形式, 否则 cmd 会把它当成命令分隔符, 直接执行后半段
+rem 脚本都在 Coco's Script 里, 所以命令里要带这一层相对目录(SCRIPT_REL)
 set "PCL_POST_NAME=[客户端]mod后处理修复脚本.bat"
-set "PCL_CMD=call "{verpath}\!SCRIPT_NAME!" "$INST_JAVA""
+if defined SCRIPT_REL set "PCL_POST_NAME=!SCRIPT_REL!\!PCL_POST_NAME!"
+set "PCL_CMD=call "{verpath}\!SCRIPT_CALL_NAME!" "$INST_JAVA""
 set "PCL_POST_CMD=call "{verpath}\!PCL_POST_NAME!" -Quiet"
-set "PCL_CMD_FULL=cd /d "!GAME_DIR!" ^&^& call "!SCRIPT_NAME!" "$INST_JAVA""
+set "PCL_CMD_FULL=cd /d "!GAME_DIR!" ^&^& call "!SCRIPT_CALL_NAME!" "$INST_JAVA""
 set "PCL_POST_FULL=call "!PCL_POST_NAME!" -Quiet"
 >"!PCL_FILE!" echo !PCL_CMD! ^&^& !PCL_POST_CMD!
 clip < "!PCL_FILE!" >nul 2>&1
@@ -1653,12 +1743,13 @@ rem ---------------------------------------------------------------------------
 rem  帮助
 rem ---------------------------------------------------------------------------
 :usage
+call :detect_dirs
 echo.
 echo %C_BIG%  Coco's 整合包 - 客户端 Mod 更新脚本  %C_RST%
 echo.
 echo   用法 双击运行, 或填进 PCL 启动前执行指令
 echo        PCL - 版本设置 - 设置 - 高级选项 - 启动前执行指令
-echo        call "{verpath}\本脚本名" "$INST_JAVA" ^&^& call "{verpath}\[客户端]mod后处理修复脚本.bat" -Quiet
+echo        call "{verpath}\!SCRIPT_CALL_NAME!" "$INST_JAVA" ^&^& call "{verpath}\!SCRIPT_REL!\[客户端]mod后处理修复脚本.bat" -Quiet
 echo.
 echo   第一个参数可选, 传 java.exe 路径则优先使用它, 对应 PCL 的 $INST_JAVA
 echo.
@@ -1676,7 +1767,8 @@ echo        COCO_PACK_SOURCE      serve 或 file 或 remote
 echo        COCO_META_SOURCE      auto 或 git 或 zip
 echo        COCO_REMOTE_PACK_URL  远端 pack.toml, 填写后不再拉本地仓
 echo        COCO_PROXY_PORT       系统代理端口, 默认 7890
-echo   同目录的 mod更新源.cfg 可覆盖源地址, 分支, 同步方式等, 优先级低于 COCO_ 环境变量
+echo   mod更新源.cfg 可覆盖源地址, 分支, 同步方式等, 优先级低于 COCO_ 环境变量
+echo   查找顺序: 先 Coco's Script\mod更新源.cfg, 再整合包根目录的 mod更新源.cfg
 echo.
 echo   失败时会打印失败报告: 失败步骤, 原因, 下载源, 手动放置目录, 日志路径
 echo   修好后直接重跑本脚本即可续接, 已完成的步骤跳过, 下载断点续传

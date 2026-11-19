@@ -1,20 +1,28 @@
 hash-format = "sha256"
 
 [[files]]
-file = "NeoForgeSwitch.ps1"
+file = "Coco's Script/NeoForgeSwitch.ps1"
 hash = "be11a3f622ed14262412b201b1e0ea21cd9605e41e66782d3e5c9d3e08d2f84d"
 
 [[files]]
-file = "[客户端]mod前置裁剪脚本.ps1"
-hash = "4d4b148f03d7010645455ced079db1a13a9ee41016a59adbc44ea84b3853f052"
+file = "Coco's Script/[客户端]mod前置裁剪脚本.ps1"
+hash = "ae0cfe18b7c00ec53847fb54290d97b1840916b5f5cd5da424c520e2c224d7d8"
 
 [[files]]
-file = "fix-grand-teleport-version.ps1"
-hash = "97c0eb90d82d1c99830f9e857a57ff9cc89945d04a0be641182d78a00c0182da"
+file = "Coco's Script/fix-grand-teleport-version.ps1"
+hash = "1962030e1f62fa36249ea068c6a9f556498304bd923667b2456cf900a725abd6"
 
 [[files]]
-file = "mcef-block-download.ps1"
-hash = "4488402190219ae13cd0667dd8b8c14f2cca7105013c3600dfc134894225b959"
+file = "Coco's Script/mcef-block-download.ps1"
+hash = "ecfbdbcf1d8e4ffa5560059c76c5528dd8ce7ea60d7155cf0ae0612cf4c2b45f"
+
+[[files]]
+file = "Coco's Script/muoniumconfig-patch-soundevent.ps1"
+hash = "5a1a14038a42a87f4fb74608872c4bc734b152aa970de12b8edf6d5a740e0553"
+
+[[files]]
+file = "Coco's Script/packwiz-manage-grand-teleport.ps1"
+hash = "dfb00382b4059b75d93f50b168bc150617fdadf0b00258e1316307aea3057913"
 
 [[files]]
 file = "mods/accessible-step.pw.toml"
@@ -1100,10 +1108,6 @@ metafile = true
 file = "mods/zeta.pw.toml"
 hash = "cb474b6c0dde741836ed4f796f3b6ab0b9d3cdc0453e651122cd002d5d1f8df8"
 metafile = true
-
-[[files]]
-file = "muoniumconfig-patch-soundevent.ps1"
-hash = "2d8bba7635a03892efe634c9a9b847a7a66c028b48239dbe2d536bdaf8de85c4"
 
 [[files]]
 file = "resourcepacks/Coco's材质包_草地小花缝合版.zip"

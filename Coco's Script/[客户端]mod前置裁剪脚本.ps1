@@ -77,7 +77,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-try { [Console]::OutputEncoding = [Text.Encoding]::GetEncoding(936) } catch { }
+# 控制台编码跟调用方走: 本目录的 bat 都会先 chcp 936, 所以从启动链进来就是 936;
+# 脚本写出的清单/报告/日志按约定固定 GBK(936) 落盘, 与 PCL启动前命令.txt 一致
 
 $script:VER = '1.0.0'
 $script:TS = Get-Date -Format 'yyyyMMdd-HHmmss'
@@ -206,10 +207,19 @@ function Find-Git {
 # ===========================================================================
 #  路径与配置
 # ===========================================================================
-function Resolve-GameDir([string]$p) {
+# 统一路径: 从脚本位置往上最多 3 层, 找含 mods 的实例目录(脚本住在 <实例>\Coco's Script\)
+function Resolve-InstanceDir([string]$p) {
+    if ($p -and (Test-Path -LiteralPath (Join-Path $p 'mods'))) { return (Resolve-Path -LiteralPath $p).Path.TrimEnd('\') }
     if ($p -and (Test-Path -LiteralPath $p)) { return (Resolve-Path -LiteralPath $p).Path.TrimEnd('\') }
-    foreach ($c in @($PSScriptRoot, (Split-Path -Parent $PSScriptRoot))) {
-        if ($c -and (Test-Path -LiteralPath (Join-Path $c 'mods'))) { return $c.TrimEnd('\') }
+    if ($env:COCO_GAME_DIR -and (Test-Path -LiteralPath (Join-Path $env:COCO_GAME_DIR 'mods'))) {
+        return (Resolve-Path -LiteralPath $env:COCO_GAME_DIR).Path.TrimEnd('\')
+    }
+    $cur = $PSScriptRoot
+    for ($i = 0; $i -lt 4 -and $cur; $i++) {
+        if (Test-Path -LiteralPath (Join-Path $cur 'mods')) { return $cur.TrimEnd('\') }
+        $parent = Split-Path -Parent $cur
+        if (-not $parent -or $parent -eq $cur) { break }
+        $cur = $parent
     }
     if ($PSScriptRoot) { return $PSScriptRoot.TrimEnd('\') }
     return (Get-Location).Path.TrimEnd('\')
@@ -548,7 +558,7 @@ function Show-Help {
 # ===========================================================================
 #  主流程
 # ===========================================================================
-$script:GAME = Resolve-GameDir $GameDir
+$script:GAME = Resolve-InstanceDir $GameDir
 
 if ($Help) {
     $script:CACHE = if ($CacheRoot) { $CacheRoot } else { Join-Path $env:LocalAppData 'CocoPackwiz' }
