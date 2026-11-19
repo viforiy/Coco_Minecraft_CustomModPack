@@ -1,6 +1,14 @@
 hash-format = "sha256"
 
 [[files]]
+file = "NeoForgeSwitch.ps1"
+hash = "be11a3f622ed14262412b201b1e0ea21cd9605e41e66782d3e5c9d3e08d2f84d"
+
+[[files]]
+file = "[客户端]mod前置裁剪脚本.ps1"
+hash = "4d4b148f03d7010645455ced079db1a13a9ee41016a59adbc44ea84b3853f052"
+
+[[files]]
 file = "fix-grand-teleport-version.ps1"
 hash = "97c0eb90d82d1c99830f9e857a57ff9cc89945d04a0be641182d78a00c0182da"
 
