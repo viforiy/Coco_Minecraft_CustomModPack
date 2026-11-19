@@ -1098,8 +1098,28 @@ file = "muoniumconfig-patch-soundevent.ps1"
 hash = "2d8bba7635a03892efe634c9a9b847a7a66c028b48239dbe2d536bdaf8de85c4"
 
 [[files]]
+file = "resourcepacks/Coco's材质包_草地小花缝合版.zip"
+hash = "ae29e423e09dacfd5282db8c99aaaffbe149d1710f2ab385742b39df05afa6c2"
+
+[[files]]
+file = "resourcepacks/Os' Colorful Grasses.zip"
+hash = "93da57ab3c77229fb17be0d9e90d0c06e7452ca23c2d974978bc33f7c9e05c6b"
+
+[[files]]
+file = "resourcepacks/§c§lVEFC汉化包.zip"
+hash = "61c91c317b43eb9f915c8d4a04ef92b71511287a23f7c2715aa4514eeaa93e55"
+
+[[files]]
+file = "resourcepacks/帕秋莉汉化材质包-vefc.zip"
+hash = "f721df8e004131a6182f7b925e922cc176f9e195a6c4aae007794eb209480708"
+
+[[files]]
+file = "resourcepacks/汉化资源包.zip"
+hash = "7d4d07ac88cc27a23d500b2e6b96a1c5a7103a492c93f63aa486858d56d6f480"
+
+[[files]]
 file = "shaderpacks/bliss-shader.pw.toml"
-hash = "878dee9866436c8935ebc0130a0316a8a33a03018c385d6181232077eda3c294"
+hash = "2f5b25affc8eb1cadf6e0fef5488f3138252681fcff8e6d09db5b882504e7410"
 metafile = true
 
 [[files]]
