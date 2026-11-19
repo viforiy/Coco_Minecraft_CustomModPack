@@ -17,6 +17,8 @@ rem         一键切换NeoForge版本.bat latest               换到最新
 rem         一键切换NeoForge版本.bat rollback             回滚上一次切换
 rem         一键切换NeoForge版本.bat target 21.1.266      换到指定版本
 rem         一键切换NeoForge版本.bat dryrun 21.1.266      只演练不写盘
+rem         一键切换NeoForge版本.bat javas                列出本机扫到的所有 Java(带来源与版本)
+rem         一键切换NeoForge版本.bat javas-deep           同上, 额外全盘深度扫描
 rem  返回 : 0 成功 / 已取消     2 参数不认识     1 出错
 rem ============================================================================
 
@@ -46,10 +48,13 @@ if /i "%~1"=="latest"   set "NEO_ARG=-Latest"
 if /i "%~1"=="rollback" set "NEO_ARG=-Rollback"
 if /i "%~1"=="target"   set "NEO_ARG=-Target %~2"
 if /i "%~1"=="dryrun"   set "NEO_ARG=-Target %~2 -DryRun"
+if /i "%~1"=="javas"      set "NEO_ARG=-ListJava"
+if /i "%~1"=="javas-deep" set "NEO_ARG=-ListJava -DeepScan"
 
 if not defined NEO_ARG (
     echo [错误] 不认识的参数: %~1
-    echo        可用: status / list / latest / rollback / target ^<版本^> / dryrun ^<版本^> / --help
+    echo        可用: status / list / latest / rollback / target ^<版本^> / dryrun ^<版本^>
+    echo              javas / javas-deep / --help
     endlocal & exit /b 2
 )
 
@@ -65,6 +70,9 @@ echo.
 echo     不带参数            交互菜单
 echo     status              看当前 NeoForge 版本 + 三处记录是否一致
 echo     list                列出该 Minecraft 版本可用的 NeoForge 版本
+echo     javas               列出本机扫到的所有 Java(PCL 启动历史 + 环境变量 + 注册表
+echo                         + 常见目录 + 启动器自带), 带来源和版本
+echo     javas-deep          同上, 再加一遍全盘深度扫描(慢)
 echo     latest              切到最新版
 echo     rollback            回滚上一次切换
 echo     target ^<版本^>       切到指定版本, 例如 target 21.1.266

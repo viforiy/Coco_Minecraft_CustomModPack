@@ -2,7 +2,7 @@ hash-format = "sha256"
 
 [[files]]
 file = "Coco's Script/NeoForgeSwitch.ps1"
-hash = "be11a3f622ed14262412b201b1e0ea21cd9605e41e66782d3e5c9d3e08d2f84d"
+hash = "663fb871e48046d017200231b7ed4f3827880186d5056c2c99a3032349a88a89"
 
 [[files]]
 file = "Coco's Script/[客户端]mod后处理修复脚本.bat"
@@ -54,7 +54,7 @@ hash = "dfb00382b4059b75d93f50b168bc150617fdadf0b00258e1316307aea3057913"
 
 [[files]]
 file = "Coco's Script/一键切换NeoForge版本.bat"
-hash = "244461a7a94f0910749acfa9caf04e68502868cb7bb763301940bdaede668948"
+hash = "40cd7aad63b0588465774f74818c955619f64be0c8432d2a73652f179c8a37f9"
 
 [[files]]
 file = "Coco's Script/脚本说明.txt"

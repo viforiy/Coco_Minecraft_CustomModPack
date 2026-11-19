@@ -76,6 +76,9 @@
     .\NeoForgeSwitch.ps1 -Menu                      交互菜单(双击 bat 走这条)
     .\NeoForgeSwitch.ps1 -PickMcDir                 列出本机所有 PCL 实例, 挑一个
     .\NeoForgeSwitch.ps1 -PickVersion               列出该实例下所有整合包, 挑一个
+    .\NeoForgeSwitch.ps1 -ListJava                  列出本机扫到的所有 Java(带来源), 不动文件
+    .\NeoForgeSwitch.ps1 -ListJava -DeepScan        同上, 再加一遍全盘深度扫描(慢)
+    .\NeoForgeSwitch.ps1 -PickJava                  交互选 Java(列表里按 d 也能全盘扫)
 
     两级目标怎么指定(优先级从高到低):
       PCL 实例: -McDir <路径>  >  -PickMcDir    >  配置.cfg  >  自动探测
@@ -233,6 +236,10 @@ param(
     #   给了就只用它; 版本不够(< 21)会直接报错, 不会偷偷换成别的
     [string]$JavaPath,
     [switch]$PickJava,
+    #   -ListJava        只列出本机扫到的所有 java(带来源), 不写任何文件
+    #   -DeepScan        让扫描多走一遍全盘(慢; 自动没找到 21+ 时再考虑)
+    [switch]$ListJava,
+    [switch]$DeepScan,
 
     # ── 网络 ───────────────────────────────────────────────────────────────
     [ValidateSet('auto', 'on', 'off')]
@@ -1394,103 +1401,81 @@ function Select-JavaInteractively {
     <#
         选一个 Java, 选中后写进 配置.cfg 的 JavaPath
 
-        两种来源:
-          · 扫描结果   Get-JavaGuesses 的常见安装位置 + JAVA_HOME + PATH + 配置里记的
-          · 手动输入   直接粘贴 java 路径(扫描漏掉的绿色版 JDK、多版本管理器装的、
-                       装在移动硬盘上的, 都靠这个口子)
+        列表来自 Get-AllJava, 覆盖:
+          · PCL 启动历史  当前版本的强制 Java、PCL 全局 Java 列表、其它整合包用过的
+          · 环境变量      JAVA_HOME / JDK_HOME / PATH
+          · 注册表        卸载表(各厂商安装包) + JavaSoft
+          · 常见目录      Program Files 各厂商、.jdks、Android Studio jbr、scoop/choco
+          · 启动器 runtime 官方/PCL/CurseForge/Modrinth/Prism/HMCL 自带的 jre
 
-        每个候选都会跑一次 java -version 取主版本(有缓存), 所以列表能标出
-        "版本太低" —— NeoForge 1.20.5+ 需要 21+, 装着一堆老 JDK 的机器上这点很关键。
+        列表里按 d 追加全盘深度扫描, 按 r 重新扫描;
+        也可以直接粘贴路径(扫描漏掉的绿色版 JDK、装在移动硬盘上的都靠这个)。
 
         返回: 选中的 java.exe 路径; 取消返回 $null
     #>
-    param()
-
-    Say ''
-    Say '扫描本机的 Java...'
+    param([switch]$DeepScan)
 
     $list = @()
-    $seen = New-Object System.Collections.Generic.HashSet[string]
-
-    $cand = @()
-    $savedJava = Get-SavedJavaPath
-    if ($savedJava) { $cand += (Resolve-JavaExe -Path $savedJava) }
-    if ($env:JAVA_HOME) { $cand += (Resolve-JavaExe -Path $env:JAVA_HOME) }
-    $cand += (Get-JavaGuesses)
-    $cmd = Get-Command java -ErrorAction SilentlyContinue
-    if ($cmd) { $cand += $cmd.Source }
-
-    foreach ($c in $cand) {
-        if (-not $c) { continue }
-        if (-not $seen.Add($c.ToLower())) { continue }
-        $major = Get-JavaMajor $c
-        $list += [pscustomobject]@{ Exe = $c; Major = $major }
-    }
-
-    # 合格的排前面
-    $list = @($list | Sort-Object @{ Expression = { if ($_.Major -ge 21) { 0 } else { 1 } } }, @{ Expression = 'Major'; Descending = $true })
-
-    $current = $script:JavaExeResolved
-    if (-not $current -and $savedJava) { $current = Resolve-JavaExe -Path $savedJava }
-
-    if ($list.Count -gt 0) {
+    while ($true) {
         Say ''
-        Write-Host '   序号  ' -NoNewline -ForegroundColor DarkCyan
-        Write-Host '版本  ' -NoNewline -ForegroundColor DarkCyan
-        Write-Host '路径' -ForegroundColor DarkCyan
-        for ($i = 0; $i -lt $list.Count; $i++) {
-            $it = $list[$i]
-            $verText = if ($it.Major -gt 0) { "$($it.Major)" } else { '?' }
-            $tag = ''
-            if ($it.Major -lt 21) { $tag = '   [版本太低, 需要 21+]' }
-            if ($current -and $it.Exe -eq $current) { $tag += '   <- 当前' }
-            Write-Host '   ' -NoNewline
-            Write-Host (Format-Display ("[{0}]" -f ($i + 1)) 6) -NoNewline -ForegroundColor DarkCyan
-            Write-Host (Format-Display $verText 6) -NoNewline -ForegroundColor White
-            Write-Host $it.Exe -NoNewline -ForegroundColor $(if ($it.Major -ge 21) { 'White' } else { 'Gray' })
-            if ($tag) { Write-Host $tag -ForegroundColor $(if ($it.Major -lt 21) { 'DarkYellow' } else { 'Cyan' }) }
-            else { Write-Host '' }
+        Say '扫描本机的 Java...(PCL 启动历史 + 环境变量 + 注册表 + 常见目录 + 启动器自带)'
+
+        $vd = $null
+        if ($VersionDir) { $vd = $VersionDir }
+        elseif ($script:VersionDir) { $vd = $script:VersionDir }
+
+        $list = @(Sort-JavaFound (Get-AllJava -VersionDir $vd -DeepScan:$DeepScan -Refresh))
+
+        $current = $script:JavaExeResolved
+        if (-not $current) {
+            $saved = Get-SavedJavaPath
+            if ($saved) { $current = Resolve-JavaExe -Path $saved }
         }
-    } else {
-        Warn '本机没扫到任何 java.exe, 只能手动输入路径'
-    }
 
-    Say ''
-    Write-Host '   也可以直接输入路径(扫描漏掉的绿色版 JDK、多版本管理器装的都靠这个)' -ForegroundColor DarkGray
-    Say ''
-
-    $ans = Read-Host '  序号 / 粘贴 java 路径  (回车取消)'
-    if (-not $ans) { return $null }
-    $ans = $ans.Trim().Trim('"').Trim("'")
-
-    $exe = $null
-    if ($ans -match '^\d+$') {
-        $idx = [int]$ans - 1
-        if ($idx -lt 0 -or $idx -ge $list.Count) { return $null }
-        $exe = $list[$idx].Exe
-    } else {
-        # 非数字: 当成路径处理
-        $exe = Resolve-JavaExe -Path $ans
-        if (-not $exe) {
-            throw ("这个路径解析不出 java.exe: $ans`n" +
-                "  要指向 java.exe、它所在的 bin 目录, 或 JDK 根目录。例如:`n" +
-                "    D:\Program Files\jdk21`n" +
-                "    D:\Program Files\jdk21\bin`n" +
-                "    D:\Program Files\jdk21\bin\java.exe")
+        if ($list.Count -gt 0) {
+            Say ''
+            Write-JavaTable -List $list -Current $current
+            $ok = @($list | Where-Object { $_.Major -ge 21 })
+            Say ''
+            Say ("  共找到 {0} 个, 其中 21+ 的 {1} 个" -f $list.Count, $ok.Count)
+        } else {
+            Warn '本机没扫到任何 java.exe, 只能手动输入路径'
         }
-        Info "手动输入的路径已解析为: $exe"
-    }
 
-    $major = Get-JavaMajor $exe
-    if ($major -lt 21) {
-        Warn "选中的 Java 是版本 $major, NeoForge 1.20.5+ 需要 21+, 生成 client.jar 时会失败"
-    }
+        Say ''
+        Write-Host '   输序号选择 · d 全盘深度扫描 · r 重新扫描 · 也可直接粘贴路径 · 回车取消' -ForegroundColor DarkGray
+        $ans = Read-Host '  序号 / 路径'
+        if (-not $ans) { return $null }
+        $ans = $ans.Trim().Trim('"').Trim("'")
 
-    Save-JavaPath $exe
-    $script:JavaExeResolved = $exe
-    $script:JavaExeSource = '手动选择'
-    Ok "已切换 Java: $exe (版本 $major)"
-    return $exe
+        if ($ans -ieq 'd') { $DeepScan = $true; continue }
+        if ($ans -ieq 'r') { $DeepScan = $false; continue }
+
+        $exe = $null
+        if ($ans -match '^\d+$') {
+            $idx = [int]$ans - 1
+            if ($idx -lt 0 -or $idx -ge $list.Count) { continue }
+            $exe = $list[$idx].Exe
+        } else {
+            $exe = Resolve-JavaExe -Path $ans
+            if (-not $exe) {
+                Warn "这个路径解析不出 java.exe: $ans   (要指向 java.exe / 它的 bin 目录 / JDK 根目录)"
+                continue
+            }
+            Info "手动输入的路径已解析为: $exe"
+        }
+
+        $major = Get-JavaMajor $exe
+        if ($major -lt 21) {
+            Warn "选中的 Java 是版本 $major, NeoForge 1.20.5+ 需要 21+, 生成 client.jar 时会失败"
+        }
+
+        Save-JavaPath $exe
+        $script:JavaExeResolved = $exe
+        $script:JavaExeSource = '手动选择'
+        Ok "已切换 Java: $exe (版本 $major)"
+        return $exe
+    }
 }
 
 function Select-VersionInteractively {
@@ -1998,7 +1983,11 @@ function Resolve-JavaExe {
 
 function Get-JavaMajor {
     <#
-        取 java 的主版本号(21.0.11 -> 21), 结果按路径缓存
+        取 java 的主版本号(21.0.11 -> 21, 1.8.0_441 -> 8), 结果按路径缓存
+
+        快路径: 先读 JDK/JRE 根目录下的 release 文件(JAVA_VERSION="21.0.11")。
+        绿色版被裁剪过、或者遇到 javapath 里的转发器时没有 release, 再退回
+        实际跑一次 java -version —— 扫描几十个候选时这个差别很明显。
 
         注意: java -version 的输出走 stderr, 直接 2>&1 在 $ErrorActionPreference='Stop'
         下会被当成终止错误抛出来, 所以临时放宽并 try 住。
@@ -2008,36 +1997,65 @@ function Get-JavaMajor {
     if ($script:JavaVersionCache.ContainsKey($Exe)) { return $script:JavaVersionCache[$Exe] }
 
     $major = 0
-    $old = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
+
+    # 1) <home>\release 快路径
     try {
-        $ver = (& $Exe -version 2>&1 | Out-String)
-        if ($ver -match 'version "(?<v>\d+)') { $major = [int]$Matches['v'] }
-    } catch {
-    } finally { $ErrorActionPreference = $old }
+        $bin = Split-Path -Parent $Exe
+        $javaHome = Split-Path -Parent $bin
+        if ($javaHome) {
+            $rel = Join-Path $javaHome 'release'
+            if (Test-Path -LiteralPath $rel) {
+                $txt = [System.IO.File]::ReadAllText($rel)
+                $m = [regex]::Match($txt, 'JAVA_VERSION\s*=\s*"(?<v>[^"]+)"')
+                if ($m.Success) { $major = ConvertTo-JavaMajor $m.Groups['v'].Value }
+            }
+        }
+    } catch { }
+
+    # 2) 退回归 java -version
+    if ($major -le 0) {
+        $old = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $ver = (& $Exe -version 2>&1 | Out-String)
+            $m2 = [regex]::Match($ver, 'version "(?<v>[^"]+)"')
+            if ($m2.Success) { $major = ConvertTo-JavaMajor $m2.Groups['v'].Value }
+        } catch {
+        } finally { $ErrorActionPreference = $old }
+    }
 
     $script:JavaVersionCache[$Exe] = $major
     return $major
+}
+
+function ConvertTo-JavaMajor {
+    <# 版本字符串 -> 主版本号: 21.0.11 -> 21, 1.8.0_441 -> 8, 25-ea -> 25 #>
+    param([string]$Text)
+    if (-not $Text) { return 0 }
+    if ($Text -match '^1\.(?<legacy>\d+)') { return [int]$Matches['legacy'] }
+    if ($Text -match '^(?<v>\d+)') { return [int]$Matches['v'] }
+    return 0
 }
 
 function Get-JavaExe {
     <#
         找可用的 Java(要求 21+, NeoForge 1.20.5+ 必需)
 
-        回退链(前面的优先):
-          1) -JavaPath 参数          显式指定, 不满足就报错(不偷偷换成别的)
-          2) 配置.cfg 的 JavaPath     上次用过的, -PickJava 会写这里
-          3) PCL 版本里的强制 Java    versions\<V>\PCL\config.json 的 InstanceForcedJava
-          4) JAVA_HOME
-          5) 常见安装路径 + PATH
+        优先级(前面的优先, 由 Get-AllJava 的 Rank 统一表达):
+          1) -JavaPath          显式指定; 不满足版本要求就报错, 不偷偷换别的
+          2) 上次选择            配置.cfg 里记的(-PickJava 写进去的那个)
+          3) PCL 当前版本        本整合包 versions\<V>\PCL\config.json 指定的 java
+          4) PCL Java 列表       %APPDATA%\PCL\config.json 里 PCL 自己扫出来的、你加过的
+          5) PCL 其它版本        别的整合包实例用过的 java(同样算启动历史)
+          6) JAVA_HOME / PATH / 注册表卸载表 / 常见安装目录 / 启动器自带 runtime
+
+        同来源取版本高的; 21+ 优先于更低的版本。
 
         -Quiet: 找不到时返回 $null 而不是抛错(给 -Status 显示用)
     #>
     param([string]$VersionDir, [switch]$Quiet)
 
     if ($script:JavaExeResolved) { return $script:JavaExeResolved }
-
-    $candidates = @()   # @{ Exe; From }
 
     # 1) 显式 -JavaPath: 只认它, 不合格直接报错
     if ($JavaPath) {
@@ -2059,107 +2077,439 @@ function Get-JavaExe {
         return $exe
     }
 
-    # 2) 配置里记着的
-    $savedJava = Get-SavedJavaPath
-    if ($savedJava) {
-        $exe = Resolve-JavaExe -Path $savedJava
-        if ($exe) { $candidates += [pscustomobject]@{ Exe = $exe; From = '配置.cfg' } }
-        else { Warn "配置里记的 JavaPath 现在不可用, 已忽略: $savedJava" }
-    }
-
-    # 3) PCL 该版本设置的强制 Java
-    if ($VersionDir) {
-        $cfgPath = Join-Path $VersionDir 'PCL\config.json'
-        if (Test-Path -LiteralPath $cfgPath) {
-            try {
-                $cfg = Read-VersionJson $cfgPath
-                if ($cfg.InstanceForcedJava -and $cfg.InstanceForcedJava.Folder) {
-                    $exe = Resolve-JavaExe -Path $cfg.InstanceForcedJava.Folder
-                    if ($exe) { $candidates += [pscustomobject]@{ Exe = $exe; From = 'PCL 版本设置' } }
-                }
-            } catch { }
+    # 2~6) 统一扫描 + 按 Rank(来源优先级) 挑第一个 21+
+    $found = @(Get-AllJava -VersionDir $VersionDir)
+    $ok = @($found | Where-Object { $_.Major -ge 21 } |
+        Sort-Object @{ Expression = 'Rank' }, @{ Expression = 'Major'; Descending = $true })
+    if ($ok.Count -gt 0) {
+        $pick = $ok[0]
+        $shortSrc = @($pick.Sources | ForEach-Object { Get-SourceShort $_ })
+        if ($shortSrc.Count -gt 3) { $src = (($shortSrc[0..2]) -join '·') + ("+{0}" -f ($shortSrc.Count - 3)) }
+        else { $src = ($shortSrc -join '·') }
+        if ($pick.Notes.Count -gt 0) { $src += ' (' + ($pick.Notes -join '·') + ')' }
+        if (-not $Quiet) {
+            Info "Java: $($pick.Exe) ($($pick.Major))  [$src]"
+            if ($ok.Count -gt 1) { Say ("      另有 {0} 个 21+ 可用, -PickJava 可以换" -f ($ok.Count - 1)) }
         }
-    }
-
-    # 4) JAVA_HOME
-    if ($env:JAVA_HOME) {
-        $exe = Resolve-JavaExe -Path $env:JAVA_HOME
-        if ($exe) { $candidates += [pscustomobject]@{ Exe = $exe; From = 'JAVA_HOME' } }
-    }
-
-    # 5) 常见安装位置
-    foreach ($guess in (Get-JavaGuesses)) {
-        $candidates += [pscustomobject]@{ Exe = $guess; From = '常见路径' }
-    }
-
-    # 6) PATH
-    $cmd = Get-Command java -ErrorAction SilentlyContinue
-    if ($cmd) { $candidates += [pscustomobject]@{ Exe = $cmd.Source; From = 'PATH' } }
-
-    # 逐个验版本
-    $tried = @()
-    $seen = New-Object System.Collections.Generic.HashSet[string]
-    foreach ($c in $candidates) {
-        if (-not $c.Exe) { continue }
-        if (-not $seen.Add($c.Exe.ToLower())) { continue }
-        $major = Get-JavaMajor $c.Exe
-        if ($major -ge 21) {
-            $script:JavaExeSource = $c.From
-            if (-not $Quiet) { Info "Java: $($c.Exe) ($major)  [$($c.From)]" }
-            $script:JavaExeResolved = $c.Exe
-            return $c.Exe
-        }
-        if ($major -gt 0) { $tried += "  $($c.Exe)  版本 $major ($($c.From))" }
+        $script:JavaExeSource = $src
+        $script:JavaExeResolved = $pick.Exe
+        return $pick.Exe
     }
 
     if ($Quiet) { return $null }
 
     $msg = "找不到可用的 Java(需要 21+, 生成 client.jar 时要用)。`n"
-    if ($tried.Count -gt 0) { $msg += "  找到但版本不够:`n" + ($tried -join "`n") + "`n" }
-    $msg += "  可以用 -JavaPath 指定, 例如:`n"
-    $msg += "    -JavaPath `"D:\Program Files\jdk21`"`n"
-    $msg += "    -PickJava    (交互选择本机已装的 Java)"
+    if ($found.Count -gt 0) {
+        $msg += "  本机找到这些, 但都不到 21:`n"
+        foreach ($f in ($found | Sort-Object @{ Expression = 'Major'; Descending = $true })) {
+            $src = ($f.Sources -join ' + ')
+            $msg += ("    {0}  版本 {1}  [{2}]`n" -f $f.Exe, $f.Major, $src)
+        }
+    } else {
+        $msg += "  一个 java 都没扫到。`n"
+    }
+    $msg += "  可以用:`n"
+    $msg += "    -ListJava               只列出扫到的所有 java(先看看有没有漏)\n"
+    $msg += "    -PickJava               交互选择(还能 d 全盘深度扫描)\n"
+    $msg += "    -JavaPath `"D:\Program Files\jdk21`"   直接指定 JDK 目录"
     throw $msg
 }
 
-function Get-JavaGuesses {
+# ============================================================================
+#  八·附. Java 发现: 把本机所有 java.exe 找出来
+#      10 上次选择        本脚本 配置.cfg 记的
+#      20 PCL 当前版本    versions\<V>\PCL\config.json 的 InstanceForcedJava
+#      30 PCL Java 列表   %APPDATA%\PCL\config.json 的 JavaList(PCL 自己扫+你手动加的)
+#      40 PCL 其它版本    别的整合包实例指定过的 java(用过就算启动历史)
+#      50 JAVA_HOME       JAVA_HOME / JDK_HOME
+#      60 PATH            java / javaw 转发器
+#      70 注册表          卸载表 InstallLocation + JavaSoft JavaHome(覆盖各厂商安装包)
+#      80 常见目录        Program Files 下各厂商目录、.jdks、Android Studio jbr ...
+#      85 启动器 runtime  官方启动器 / PCL / CurseForge / Modrinth / Prism 自带的 jre
+#      90 全盘扫描        -DeepScan, 或交互选 Java 时按 d
+# ============================================================================
+
+function New-JavaMap {
+    return (New-Object System.Collections.Specialized.OrderedDictionary)
+}
+
+function Add-JavaHit {
     <#
-        猜几个常见的 JDK 安装位置
-        只做一次目录列举, 不递归(扫盘会慢), 由 Get-JavaExe 再去验版本
+        把一个候选并进结果表
+        同一个 java.exe 只留一条, 来源与备注累加; Rank 取最小值(来源越贴合越优先)
     #>
-    $roots = @(
-        'C:\Program Files\Java',
-        'C:\Program Files\Eclipse Adoptium',
-        'C:\Program Files\Eclipse Foundation',
-        'C:\Program Files\Microsoft',
-        'C:\Program Files\Zulu',
-        'C:\Program Files\BellSoft',
-        'C:\Program Files\Amazon Corretto',
-        'C:\Program Files\Semeru',
-        'D:\Program Files\Java',
-        'D:\Program Files',
-        (Join-Path $env:LOCALAPPDATA 'Programs\Eclipse Adoptium'),
-        (Join-Path $env:LOCALAPPDATA 'Programs\Microsoft')
-    )
-    $found = @()
-    foreach ($r in ($roots | Where-Object { $_ } | Select-Object -Unique)) {
-        if (-not (Test-Path -LiteralPath $r)) { continue }
-        # 根目录自己可能就是 JDK
-        $direct = Resolve-JavaExe -Path $r
-        if ($direct) { $found += $direct }
-        # 下一层子目录(最常见: jdk-21.0.11+9、jdk21、Microsoft-jdk-21.0.x)
-        foreach ($sub in (Get-ChildItem -LiteralPath $r -Directory -ErrorAction SilentlyContinue | Select-Object -First 40)) {
-            $exe = Resolve-JavaExe -Path $sub.FullName
-            if ($exe) { $found += $exe }
+    param($Map, [string]$Path, [string]$Source, [int]$Rank, [string]$Note)
+    if (-not $Map -or -not $Path) { return }
+    $exe = Resolve-JavaExe -Path $Path
+    if (-not $exe) { return }
+    # javaw.exe 与 java.exe 是同一个 JDK: 统一折到 java.exe, 免得列表里出现两条
+    if ((Split-Path -Leaf $exe) -ieq 'javaw.exe') {
+        $sibling = Join-Path (Split-Path -Parent $exe) 'java.exe'
+        if (Test-Path -LiteralPath $sibling) { $exe = (Resolve-Path -LiteralPath $sibling).Path }
+    }
+    $key = $exe.ToLowerInvariant()
+    if ($Map.Contains($key)) {
+        $e = $Map[$key]
+        if ($e.Sources -notcontains $Source) { $e.Sources = @($e.Sources) + $Source }
+        if ($Rank -lt $e.Rank) { $e.Rank = $Rank }
+        if ($Note -and ($e.Notes -notcontains $Note)) { $e.Notes = @($e.Notes) + $Note }
+        return
+    }
+    $notes = @()
+    if ($Note) { $notes = @($Note) }
+    $Map[$key] = [pscustomobject]@{
+        Exe     = $exe
+        Major   = -1
+        Rank    = $Rank
+        Sources = @($Source)
+        Notes   = $notes
+    }
+}
+
+function Get-PclJavaHistory {
+    <#
+        PCL 记录过的 java —— 也就是"整合包启动历史里用过的那几个":
+          1) 全局 Java 列表  %APPDATA%\PCL\config.json 的 JavaList
+             (PCL 自己扫出来的 + 你在界面里加过的; JavaRemovedList 里的跳过)
+          2) 每个版本实例的强制 Java  versions\<V>\PCL\config.json 的 InstanceForcedJava
+             当前这个整合包给最高优先级, 其它整合包记一条"N 个整合包在用"
+    #>
+    param([string]$VersionDir, $Map)
+
+    $pclCfg = Join-Path $env:APPDATA 'PCL\config.json'
+    if (Test-Path -LiteralPath $pclCfg) {
+        try {
+            $cfg = ConvertFrom-Json (Read-TextFile $pclCfg)
+            $removed = @()
+            foreach ($r in @($cfg.JavaRemovedList)) {
+                if ($r -and $r.Folder) { $removed += ([string]$r.Folder).ToLowerInvariant().TrimEnd('\') }
+            }
+            foreach ($it in @($cfg.JavaList)) {
+                if (-not $it -or -not $it.Folder) { continue }
+                if ($removed -contains ([string]$it.Folder).ToLowerInvariant().TrimEnd('\')) { continue }
+                $note = ''
+                if ($it.Version -and $it.Version.Major) { $note = "PCL 记的版本 $($it.Version.Major)" }
+                Add-JavaHit -Map $Map -Path ([string]$it.Folder) -Source 'PCL Java 列表' -Rank 30 -Note $note
+            }
+        } catch { }
+    }
+
+    $root = $null
+    if ($VersionDir) { $root = Split-Path -Parent (Split-Path -Parent $VersionDir) }
+    if (-not $root -and $script:Ctx) { $root = $script:Ctx.Root }
+    if (-not $root) { return }
+
+    $curName = ''
+    if ($VersionDir) { $curName = (Split-Path -Leaf $VersionDir).ToLowerInvariant() }
+    $others = @{}
+    foreach ($d in (Get-ChildItem -LiteralPath (Join-Path $root 'versions') -Directory -ErrorAction SilentlyContinue)) {
+        $cfgPath = Join-Path $d.FullName 'PCL\config.json'
+        if (-not (Test-Path -LiteralPath $cfgPath)) { continue }
+        $forced = $null
+        try {
+            $c = ConvertFrom-Json (Read-TextFile $cfgPath)
+            if ($c.InstanceForcedJava -and $c.InstanceForcedJava.Folder) { $forced = [string]$c.InstanceForcedJava.Folder }
+        } catch { continue }
+        if (-not $forced) { continue }
+        if ($d.Name.ToLowerInvariant() -eq $curName) {
+            Add-JavaHit -Map $Map -Path $forced -Source 'PCL 当前版本' -Rank 20 -Note ("版本 " + $d.Name)
+        } else {
+            $k = $forced.ToLowerInvariant().TrimEnd('\')
+            if (-not $others.ContainsKey($k)) { $others[$k] = 0 }
+            $others[$k] = $others[$k] + 1
+            Add-JavaHit -Map $Map -Path $forced -Source 'PCL 其它版本' -Rank 40
         }
     }
-    return @($found | Select-Object -Unique)
+    foreach ($k in @($others.Keys)) {
+        $exe = Resolve-JavaExe -Path $k
+        if (-not $exe) { continue }
+        $key = $exe.ToLowerInvariant()
+        if ($Map.Contains($key)) {
+            $note = "$($others[$k]) 个整合包在用"
+            if ($Map[$key].Notes -notcontains $note) { $Map[$key].Notes = @($Map[$key].Notes) + $note }
+        }
+    }
+}
+
+function Get-RegistryJava {
+    <#
+        注册表: 两条路
+          1) 卸载表 InstallLocation —— MSI/EXE 装的 JDK/JRE 几乎都会留, 拿到目录就能拼 java.exe
+             比逐个厂商认注册表键可靠得多(Zulu/Corretto/Temurin/Liberica/... 写法各不相同)
+          2) JavaSoft\JDK|JRE\CurrentVersion\JavaHome —— 老 Oracle/OpenJDK 安装包
+    #>
+    param($Map)
+    $unins = @(
+        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    )
+    $pattern = '(?i)(jdk|jre|openjdk|java\s*(se)?\s*development|java\s*\d|zulu|corretto|adoptium|temurin|liberica|semeru|dragonwell|graalvm|kona|bisheng)'
+    foreach ($p in $unins) {
+        foreach ($it in @(Get-ItemProperty -Path $p -ErrorAction SilentlyContinue)) {
+            $dn = [string]$it.DisplayName
+            if (-not $dn -or $dn -notmatch $pattern) { continue }
+            $loc = [string]$it.InstallLocation
+            if (-not $loc) { continue }
+            Add-JavaHit -Map $Map -Path $loc -Source '注册表' -Rank 70 -Note $dn
+        }
+    }
+    foreach ($base in @('HKLM:\SOFTWARE\JavaSoft', 'HKLM:\SOFTWARE\WOW6432Node\JavaSoft')) {
+        if (-not (Test-Path $base)) { continue }
+        foreach ($kind in @('JDK', 'Java Development Kit', 'Java Runtime Environment')) {
+            $k = Join-Path $base $kind
+            if (-not (Test-Path $k)) { continue }
+            $cur = (Get-ItemProperty -Path $k -Name CurrentVersion -ErrorAction SilentlyContinue).CurrentVersion
+            if (-not $cur) { continue }
+            $javaHome = (Get-ItemProperty -Path (Join-Path $k $cur) -Name JavaHome -ErrorAction SilentlyContinue).JavaHome
+            if ($javaHome) { Add-JavaHit -Map $Map -Path ([string]$javaHome) -Source '注册表' -Rank 70 -Note "JavaSoft $kind $cur" }
+        }
+    }
+}
+
+function Get-KnownLocationJava {
+    <#
+        常见安装目录: Program Files 下各厂商 + 用户级目录 + 版本管理器目录
+        只往"名字像 JDK 的目录"里钻两层, 不做全盘遍历, 速度可控
+    #>
+    param($Map)
+    $namePattern = '(?i)(java|jdk|jre|openjdk|zulu|corretto|adoptium|temurin|liberica|semeru|dragonwell|graal|jbr|runtime|android)'
+    $roots = @(
+        'C:\Program Files\Java', 'C:\Program Files (x86)\Java',
+        'C:\Program Files\Eclipse Adoptium', 'C:\Program Files\Eclipse Foundation',
+        'C:\Program Files\Microsoft', 'C:\Program Files (x86)\Microsoft',
+        'C:\Program Files\Zulu', 'C:\Program Files\BellSoft', 'C:\Program Files\Amazon Corretto',
+        'C:\Program Files\Semeru', 'C:\Program Files\IBM\Semeru', 'C:\Program Files\GraalVM',
+        'C:\Program Files\Android\Android Studio\jbr',
+        'C:\Program Files\JetBrains',
+        'D:\Program Files', 'D:\Java', 'C:\Java',
+        (Join-Path $env:USERPROFILE '.jdks'),
+        (Join-Path $env:USERPROFILE 'scoop\apps'),
+        (Join-Path $env:USERPROFILE 'scoop\persist'),
+        'C:\ProgramData\chocolatey\lib',
+        (Join-Path $env:LOCALAPPDATA 'Programs\Eclipse Adoptium'),
+        (Join-Path $env:LOCALAPPDATA 'Programs\Microsoft'),
+        (Join-Path $env:LOCALAPPDATA 'JetBrains\Toolbox\apps'),
+        (Join-Path $env:LOCALAPPDATA 'Android\Sdk\jbr')
+    )
+    if ($env:ProgramFiles) { $roots += $env:ProgramFiles }
+    if (${env:ProgramFiles(x86)}) { $roots += ${env:ProgramFiles(x86)} }
+
+    foreach ($r in (@($roots) | Where-Object { $_ } | Select-Object -Unique)) {
+        if (-not (Test-Path -LiteralPath $r)) { continue }
+        # 1) 根本身可能就是 JDK
+        Add-JavaHit -Map $Map -Path $r -Source '常见目录' -Rank 80
+        # 2) 下一层: 名字像 JDK 的目录(含 jdk-21.0.11+9 / zulu-21 / jbr 这类)
+        foreach ($sub in @(Get-ChildItem -LiteralPath $r -Directory -ErrorAction SilentlyContinue | Select-Object -First 200)) {
+            Add-JavaHit -Map $Map -Path $sub.FullName -Source '常见目录' -Rank 80
+            # 3) 再下一层: JetBrains Toolbox / scoop / chocolatey 的结构(厂商\版本\...)
+            if ($sub.Name -match $namePattern) {
+                foreach ($sub2 in @(Get-ChildItem -LiteralPath $sub.FullName -Directory -ErrorAction SilentlyContinue | Select-Object -First 40)) {
+                    Add-JavaHit -Map $Map -Path $sub2.FullName -Source '常见目录' -Rank 80
+                }
+            }
+        }
+    }
+}
+
+function Get-LauncherRuntimeJava {
+    <# 各启动器自带的 jre: 官方 / PCL / CurseForge / Modrinth / Prism / HMCL #>
+    param($Map)
+    $dirs = @(
+        (Join-Path $env:APPDATA '.minecraft\runtime'),
+        (Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.4297127D64EC6_8wekyb3d8bbwe\LocalCache\Local\runtime'),
+        'C:\Program Files (x86)\Minecraft Launcher\runtime',
+        'C:\Program Files\Minecraft Launcher\runtime',
+        (Join-Path $env:APPDATA 'PrismLauncher\java'),
+        (Join-Path $env:APPDATA 'PrismLauncher\meta\runtime'),
+        (Join-Path $env:APPDATA '.hmcl\java'),
+        (Join-Path $env:APPDATA 'ModrinthApp\meta\runtime'),
+        (Join-Path $env:APPDATA 'com.modrinth.theseus\meta\runtime'),
+        (Join-Path $env:USERPROFILE 'curseforge\minecraft\Install\runtime'),
+        (Join-Path $env:USERPROFILE 'Documents\curseforge\minecraft\Install\runtime'),
+        (Join-Path $env:APPDATA 'PCL\Java'),
+        (Join-Path $env:TEMP 'PCL\Java')
+    )
+    if ($script:Ctx -and $script:Ctx.Root) {
+        $dirs += (Join-Path $script:Ctx.Root 'runtime')
+        $dirs += (Join-Path $script:Ctx.Root 'PCL\Java')
+    }
+    foreach ($d in (@($dirs) | Where-Object { $_ } | Select-Object -Unique)) {
+        if (-not (Test-Path -LiteralPath $d)) { continue }
+        # runtime\java-runtime-gamma\windows-x64\java-runtime-gamma\bin\java.exe
+        foreach ($exe in @(Get-ChildItem -LiteralPath $d -Recurse -Depth 4 -Filter 'java.exe' -File -ErrorAction SilentlyContinue | Select-Object -First 20)) {
+            Add-JavaHit -Map $Map -Path $exe.FullName -Source '启动器 runtime' -Rank 85
+        }
+    }
+}
+
+function Get-DeepJavaScan {
+    <#
+        全盘扫描(交互选 Java 时按 d 触发)
+        只从各盘的常见目录起步(BFS, 限深 + 限时 + 跳过系统目录), 不做整盘遍历,
+        免得为了找一个绿色版 JDK 把硬盘扫上十分钟
+    #>
+    param($Map, [int]$MaxDepth = 3, [int]$TimeoutSec = 60)
+    $deadline = (Get-Date).AddSeconds($TimeoutSec)
+    $skip = @('windows', 'winsxs', '$recycle.bin', 'system volume information', 'node_modules',
+        '.git', '.gradle', '.m2', 'package cache', 'installer', 'cache', 'temp', 'tmp',
+        'msocache', 'recovery', 'perflogs', '$windows.~bt', '$windows.~ws', 'onedrivetemp',
+        'mods', 'resourcepacks', 'shaderpacks', 'saves')
+    $drives = @(Get-PSDrive -PSProvider FileSystem -ErrorAction SilentlyContinue |
+        Where-Object { $_.Used -gt 0 -and $_.Root -match '^[A-Za-z]:\\$' } |
+        ForEach-Object { $_.Root })
+    $queue = New-Object System.Collections.Queue
+    foreach ($d in $drives) {
+        foreach ($sub in @('', 'Program Files', 'Program Files (x86)', 'ProgramData', 'Java', 'jdk', 'Develop', 'Dev', 'Tools', 'Software', 'App', 'Apps', 'Game', 'Games')) {
+            $p = if ($sub) { Join-Path $d $sub } else { $d }
+            if (Test-Path -LiteralPath $p) { $queue.Enqueue(@($p, 0)) }
+        }
+    }
+
+    $visited = 0
+    while ($queue.Count -gt 0) {
+        if ((Get-Date) -gt $deadline) { Warn '全盘扫描超时, 先用手上这些'; break }
+        if ($visited -ge 30000) { Warn '全盘扫描目录数到上限, 先用手上这些'; break }
+        $item = $queue.Dequeue()
+        $dir = [string]$item[0]
+        $depth = [int]$item[1]
+        $visited++
+        $cand = Join-Path $dir 'bin\java.exe'
+        if (Test-Path -LiteralPath $cand) { Add-JavaHit -Map $Map -Path $cand -Source '全盘扫描' -Rank 90 }
+        if ($depth -ge $MaxDepth) { continue }
+        foreach ($sub in @(Get-ChildItem -LiteralPath $dir -Directory -ErrorAction SilentlyContinue)) {
+            if ($skip -contains $sub.Name.ToLowerInvariant()) { continue }
+            $queue.Enqueue(@($sub.FullName, ($depth + 1)))
+        }
+    }
+    Info "全盘扫描完成: 看了 $visited 个目录"
+}
+
+function Sort-JavaFound {
+    param($List)
+    return @($List | Sort-Object `
+        @{ Expression = { if ($_.Major -ge 21) { 0 } else { 1 } } }, `
+        @{ Expression = 'Rank' }, `
+        @{ Expression = 'Major'; Descending = $true }, `
+        @{ Expression = 'Exe' })
+}
+
+function Get-AllJava {
+    <#
+        汇总本机所有 java.exe(带版本、来源、来源优先级)
+        结果会缓存: 同一进程里重复调用不再扫; -Refresh 重扫, -DeepScan 追加全盘扫描
+    #>
+    param([string]$VersionDir, [switch]$DeepScan, [switch]$Refresh)
+
+    if ($script:JavaFound -and -not $Refresh) {
+        if (-not $DeepScan -or $script:JavaDeepDone) { return $script:JavaFound }
+    }
+
+    $map = New-JavaMap
+
+    $saved = Get-SavedJavaPath
+    if ($saved) { Add-JavaHit -Map $map -Path $saved -Source '上次选择' -Rank 10 }
+
+    Get-PclJavaHistory -VersionDir $VersionDir -Map $map
+
+    if ($env:JAVA_HOME) { Add-JavaHit -Map $map -Path $env:JAVA_HOME -Source 'JAVA_HOME' -Rank 50 }
+    if ($env:JDK_HOME) { Add-JavaHit -Map $map -Path $env:JDK_HOME -Source 'JAVA_HOME' -Rank 50 }
+
+    foreach ($c in @(Get-Command java.exe -All -ErrorAction SilentlyContinue)) { Add-JavaHit -Map $map -Path $c.Source -Source 'PATH' -Rank 60 }
+    foreach ($c in @(Get-Command javaw.exe -All -ErrorAction SilentlyContinue)) { Add-JavaHit -Map $map -Path $c.Source -Source 'PATH' -Rank 60 }
+
+    Get-RegistryJava -Map $map
+    Get-KnownLocationJava -Map $map
+    Get-LauncherRuntimeJava -Map $map
+    if ($DeepScan) { Get-DeepJavaScan -Map $map; $script:JavaDeepDone = $true }
+
+    $out = @()
+    foreach ($k in @($map.Keys)) {
+        $e = $map[$k]
+        $e.Major = Get-JavaMajor $e.Exe
+        $out += $e
+    }
+    $script:JavaFound = @($out)
+    return $script:JavaFound
+}
+
+function Get-SourceShort {
+    <# 来源短标签: 列表里挤得下, 详情另起一行 #>
+    param([string]$Name)
+    switch ($Name) {
+        '上次选择' { return '上次' }
+        'PCL 当前版本' { return 'PCL当前' }
+        'PCL Java 列表' { return 'PCL列表' }
+        'PCL 其它版本' { return 'PCL其它' }
+        '启动器 runtime' { return 'runtime' }
+        '全盘扫描' { return '全盘' }
+        default { return $Name }
+    }
+}
+
+function Write-JavaTable {
+    <#
+        画 Java 列表: 序号 / 版本 / 来源 / 路径
+        来源用短标签; 备注(PCL 记的版本、N 个整合包在用、厂商名)另起一行缩进显示,
+        否则长来源会把这个表挤成一行糊在一起
+    #>
+    param($List, [string]$Current)
+    Write-Host '   序号  ' -NoNewline -ForegroundColor DarkCyan
+    Write-Host '版本  ' -NoNewline -ForegroundColor DarkCyan
+    Write-Host '来源  ' -NoNewline -ForegroundColor DarkCyan
+    Write-Host '路径' -ForegroundColor DarkCyan
+    for ($i = 0; $i -lt $List.Count; $i++) {
+        $it = $List[$i]
+        $verText = if ($it.Major -gt 0) { "$($it.Major)" } else { '?' }
+        $short = @()
+        foreach ($s in $it.Sources) { $short += (Get-SourceShort $s) }
+        # 来源最多显示 3 个, 多的折成 +N, 不然这一列会被撑爆, 把路径挤到一起
+        if ($short.Count -gt 3) {
+            $srcText = (($short[0..2]) -join '·') + ("+{0}" -f ($short.Count - 3))
+        } else {
+            $srcText = ($short -join '·')
+        }
+        $tag = ''
+        if ($it.Major -lt 21) { $tag = '   [版本太低, 需要 21+]' }
+        if ($Current -and $it.Exe -eq $Current) { $tag += '   <- 当前' }
+        Write-Host '   ' -NoNewline
+        Write-Host (Format-Display ("[{0}]" -f ($i + 1)) 6) -NoNewline -ForegroundColor DarkCyan
+        Write-Host (Format-Display $verText 6) -NoNewline -ForegroundColor White
+        Write-Host (Format-Display $srcText 28) -NoNewline -ForegroundColor DarkGray
+        Write-Host ' ' -NoNewline
+        Write-Host $it.Exe -NoNewline -ForegroundColor $(if ($it.Major -ge 21) { 'White' } else { 'Gray' })
+        if ($tag) { Write-Host $tag -ForegroundColor $(if ($it.Major -lt 21) { 'DarkYellow' } else { 'Cyan' }) }
+        else { Write-Host '' }
+        if ($it.Notes -and $it.Notes.Count -gt 0) {
+            Write-Host ('              ' + ($it.Notes -join ' · ')) -ForegroundColor DarkGray
+        }
+    }
+}
+
+function Show-JavaList {
+    <# -ListJava: 只列出扫到的所有 java, 不动任何文件 #>
+    param([string]$VersionDir, [switch]$DeepScan)
+    $list = @(Sort-JavaFound (Get-AllJava -VersionDir $VersionDir -DeepScan:$DeepScan))
+    Head '本机的 Java'
+    if ($list.Count -eq 0) {
+        Warn '一个 java.exe 都没扫到'
+        return
+    }
+    Write-JavaTable -List $list -Current $script:JavaExeResolved
+    $ok = @($list | Where-Object { $_.Major -ge 21 })
+    Say ''
+    Info ("共 {0} 个, 其中 21+ 的 {1} 个" -f $list.Count, $ok.Count)
+    if ($ok.Count -gt 0) {
+        $p0 = $ok[0]
+        Info ("自动会选: {0} ({1}, {2})" -f $p0.Exe, $p0.Major, ($p0.Sources -join '+'))
+    } else {
+        Warn '没有 21+ 的 Java, 切版本需要生成 client.jar 时会失败'
+    }
 }
 
 # ============================================================================
 #  九. JSON 组装
 # ============================================================================
-
 function Get-LoaderSignature {
     <# 旧 loader 的库坐标集合, 用于"当前 JSON 减去旧 loader"的精确差集 #>
     param($LoaderJson)
@@ -3047,15 +3397,15 @@ function Invoke-StatusAction {
     Head '当前状态'
     # 先讲清"这是哪个实例下的哪个整合包", 再看它内部是否自洽
     # 列宽 34: 本机实例名 "[Client]MultiIntergationPack" 显示宽度 28, 要留出间隔
-    Say ("  PCL 实例  " + (Format-Display $t.InstanceName 34) + $t.Instance)
-    Say ("  整合包    " + (Format-Display $t.VersionName 34) + $t.VersionDir)
+    Say ("  PCL 实例  " + (Format-Display $t.InstanceName 36) + ' ' + $t.Instance)
+    Say ("  整合包    " + (Format-Display $t.VersionName 36) + ' ' + $t.VersionDir)
 
     # Java 这一行只在"能确定"时显示; 找不到不报错(-Quiet), 免得 -Status 也要先装好 java
     $java = Get-JavaExe -VersionDir $version.Dir -Quiet
     if ($java) {
         $jm = Get-JavaMajor $java
         $javaSrc = if ($script:JavaExeSource) { $script:JavaExeSource } else { '自动探测' }
-        Say ("  Java      " + (Format-Display $jm 34) + $java + "  [$javaSrc]")
+        Say ("  Java      " + (Format-Display $jm 36) + ' ' + $java + "  [$javaSrc]")
     } else {
         Say ("  Java      " + (Format-Display '-' 34) + '没找到可用 Java(切版本时若要生成 client.jar 会用到)')
     }
@@ -3330,9 +3680,20 @@ try {
         if ($Menu) {
             # 菜单里不用这个开关
         } else {
-            $null = Select-JavaInteractively
+            $null = Select-JavaInteractively -DeepScan:$DeepScan
             exit 0
         }
+    }
+
+    # -ListJava: 只列出扫到的所有 java(带来源), 便于确认"机器上到底有几个 java"
+    if ($ListJava) {
+        $rootL = $null
+        try { $rootL = Find-McDir } catch { }
+        if ($rootL) { try { $null = New-Context -Root $rootL } catch { } }
+        $vdL = $null
+        if ($rootL) { try { $vdL = (Select-VersionDir -Root $rootL).Dir } catch { } }
+        Show-JavaList -VersionDir $vdL -DeepScan:$DeepScan
+        exit 0
     }
 
     $root = Find-McDir
@@ -3392,6 +3753,9 @@ try {
                 Say '  -Target 21.1.266        切到指定版本(加 -DryRun 只演练)'
                 Say '  -Rollback               回滚到上一次切换前'
                 Say '  -PickMcDir              换一个整合包(列出本机所有 .minecraft)'
+                Say '  -ListJava               列出本机扫到的所有 Java(带来源, 不动文件)'
+                Say '  -PickJava               交互选择 Java(列表里按 d 可再加全盘扫描)'
+                Say '  -DeepScan               让 Java 扫描多走一遍全盘(配 -ListJava / -PickJava)'
                 Say '  -Menu                   交互菜单'
                 Say ''
                 Say '示例: .\NeoForgeSwitch.ps1 -Target 21.1.266'
