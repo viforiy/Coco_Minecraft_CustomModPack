@@ -33,10 +33,6 @@ file = "Coco's Script/mods-clip.ps1"
 hash = "3d626d5a01297185276bc96e095190a29917b95de624621fe81ba35ca6790b75"
 
 [[files]]
-file = "Coco's Script/mod更新源.cfg"
-hash = "b9cc7654c5e050058dbbb8a4afef4c318060b0dfa8356d71889c131055a94524"
-
-[[files]]
 file = "Coco's Script/mod裁剪脚本.bat"
 hash = "6d73cd400da6e2c958408103678cf5adbb20d133b40d929ad637407fde0a595d"
 
@@ -1170,6 +1166,11 @@ hash = "7d4d07ac88cc27a23d500b2e6b96a1c5a7103a492c93f63aa486858d56d6f480"
 [[files]]
 file = "shaderpacks/bliss-shader.pw.toml"
 hash = "2f5b25affc8eb1cadf6e0fef5488f3138252681fcff8e6d09db5b882504e7410"
+metafile = true
+
+[[files]]
+file = "shaderpacks/eclipse-shader-voxy.pw.toml"
+hash = "afe8a8c22d45b9886a9b727a6fecb9aedbcd1f13a723276612a5a132ee6af26a"
 metafile = true
 
 [[files]]

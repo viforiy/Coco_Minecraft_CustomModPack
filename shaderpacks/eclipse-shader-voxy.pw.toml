@@ -1,0 +1,8 @@
+name = "Eclipse Shader Voxy"
+side = "client"
+filename = "[voxy  ≈‰]EclipseShaderVoxy.zip"
+
+[download]
+hash-format = "sha256"
+url = "https://release-assets.githubusercontent.com/github-production-release-asset/1247524210/3f64f5a0-5c7d-41cd-bd86-d2af8de33709?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-11-19T20%3A17%3A23Z&rscd=attachment%3B+filename%3DEclipseShaderVoxy.zip&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-11-19T19%3A16%3A57Z&ske=2026-11-19T20%3A17%3A23Z&sks=b&skv=2018-11-09&sig=f6ZG7HbpQEn2OJXIq7D%2B0BqMOw7bb2IJU8QcCYCGkvk%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc5NTExODExMiwibmJmIjoxNzk1MTE2MzEyLCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.j4Gk5j2Q0lKGzcbFHlMejOuUUnx_wSP7WlmqWMW-8eo&response-content-disposition=attachment%3B%20filename%3DEclipseShaderVoxy.zip&response-content-type=application%2Foctet-stream"
+hash = "824b169c952aee682a609e1686f2e3e1d5ee6641af4175fc2d8aac06233db092"
