@@ -1,0 +1,8 @@
+name = "Bliss-Shader"
+filename = "Bliss-Shader-Unstable.zip"
+side = "client"
+
+[download]
+url = "https://codeload.github.com/X0nk/Bliss-Shader/zip/refs/heads/Unstable"
+hash-format = "sha256"
+hash = "fcb2b8a8de27fadb8e01f93ca89bfc4c145f24549d064ee07f221635e8ef7a74"

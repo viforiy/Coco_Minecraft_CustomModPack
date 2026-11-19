@@ -1,20 +1,8 @@
 hash-format = "sha256"
 
 [[files]]
-file = "[客户端]mod后处理修复脚本.cmd"
-hash = "98253e3f7cfeac026a4bea3189420f4f6ca43020dde44b480a3563c5aea48918"
-
-[[files]]
-file = "fix-grand-teleport-version.cmd"
-hash = "c8d177403800fced78c3cbd43866acd5df025e7f921024159eab5d034270a209"
-
-[[files]]
 file = "fix-grand-teleport-version.ps1"
 hash = "97c0eb90d82d1c99830f9e857a57ff9cc89945d04a0be641182d78a00c0182da"
-
-[[files]]
-file = "mcef-block-download.cmd"
-hash = "89ff92b9dc334b9e11b451a7bada44c10ee02a7003246b36442923fc6d8a63ef"
 
 [[files]]
 file = "mcef-block-download.ps1"
@@ -1106,12 +1094,13 @@ hash = "cb474b6c0dde741836ed4f796f3b6ab0b9d3cdc0453e651122cd002d5d1f8df8"
 metafile = true
 
 [[files]]
-file = "muoniumconfig-patch-soundevent.cmd"
-hash = "066f81a9c2ff1cd57d324b1bc868719ac2f5bfab86856b2bde8e7233ca44447e"
-
-[[files]]
 file = "muoniumconfig-patch-soundevent.ps1"
 hash = "2d8bba7635a03892efe634c9a9b847a7a66c028b48239dbe2d536bdaf8de85c4"
+
+[[files]]
+file = "shaderpacks/bliss-shader.pw.toml"
+hash = "878dee9866436c8935ebc0130a0316a8a33a03018c385d6181232077eda3c294"
+metafile = true
 
 [[files]]
 file = "别名表.cfg"
