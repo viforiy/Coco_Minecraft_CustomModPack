@@ -61,10 +61,6 @@ file = "Coco's Script/脚本说明.txt"
 hash = "867a483178cfe90e8f6bc3b9e34c4814c24d96abb0bbb1ad8faa7a93c8dcf51e"
 
 [[files]]
-file = "mods/MuoniumPlayer-1.21.1-neoforge-2.5.2.jar"
-hash = "de5cc9d74c80235ce9c5306b0828f6895905dd35b54f51307e257cac870269b3"
-
-[[files]]
 file = "mods/accessible-step.pw.toml"
 hash = "0a29963989ee266df0d14affbab7b080e48e1d03630c242edd3e32e19ced44eb"
 metafile = true
@@ -793,10 +789,6 @@ metafile = true
 file = "mods/natures-compass.pw.toml"
 hash = "35acdf433fe8f8599f59975e848efdb717663c2c471d3a5dc18743799795a736"
 metafile = true
-
-[[files]]
-file = "mods/neo-voxy-0.4.0-NHblock714.jar"
-hash = "baf6e8db4a35f34576ccfcc0739f2fad6ad12a9931757b3963b761ed3c9b9317"
 
 [[files]]
 file = "mods/no-chat-reports.pw.toml"
