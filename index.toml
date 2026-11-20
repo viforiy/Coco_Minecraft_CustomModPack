@@ -1172,15 +1172,5 @@ file = "resourcepacks/汉化资源包.zip"
 hash = "7d4d07ac88cc27a23d500b2e6b96a1c5a7103a492c93f63aa486858d56d6f480"
 
 [[files]]
-file = "shaderpacks/bliss-shader.pw.toml"
-hash = "2f5b25affc8eb1cadf6e0fef5488f3138252681fcff8e6d09db5b882504e7410"
-metafile = true
-
-[[files]]
-file = "shaderpacks/eclipse-shader-voxy.pw.toml"
-hash = "e79a136c960ce1313ff7dedd80e5b47880fe320b18d318d826c076cefe273dc6"
-metafile = true
-
-[[files]]
 file = "别名表.cfg"
 hash = "623f77d5c3e4a4e1d83894affec0507a9e81c3d1816655d0f81d33ccca52cf53"
