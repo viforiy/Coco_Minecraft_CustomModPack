@@ -6,7 +6,7 @@ rem chcp 936是切换cmd为GBK(ANSI)编码, chcp 65001是切换cmd为UTF-8编码
 rem <command> /?    可以查看命令参数使用方法
 
 
-
+rem 1111
 rem ============================================================================
 rem  Coco's 整合包 - 客户端 Mod 更新脚本 - PCL 启动前执行
 rem
@@ -131,6 +131,9 @@ rem 用户配置
 rem 本地包服务端口
 set "PACK_PORT_BASE=8080"
 
+rem packwiz-installer-bootstrap.jar可以在任意位置,但是packwiz-installer.jar必须在版本文件夹下,拉取mod文件时以packwiz-installer.jar所在目录为根路径
+set "BOOTSTRAP_JAR="
+set "INSTALLER_JAR="
 
 
 rem=========================================================
@@ -291,15 +294,38 @@ rem packwiz.exe准备
 set "PACKWIZ_EXE="
 if not defined PACKWIZ_EXE call :find_packwiz_on_path
 if not defined PACKWIZ_EXE call :download_packwiz
-
-if defined PACKWIZ_EXE (
-    echo 将使用 %C_GRN% packwiz: %C_RST% %C_DIM% !PACKWIZ_EXE!%C_RST%
-) else (
+if not defined PACKWIZ_EXE (
     echo %E_WARN% packwiz.exe 不可用, 跳过本地服务, 直接把本地 pack.toml 交给安装器
     if /i not "!PACK_SOURCE!"=="remote" set "PACK_SOURCE=file"
+) else (
+	echo 将使用 %C_GRN% packwiz: %C_RST% %C_DIM% !PACKWIZ_EXE!%C_RST%
 )
-rem packwiz-installer.jar准备
+
 rem packwiz-installer-bootstrap.jar准备
+if not defined BOOTSTRAP_JAR call :find_bootstrap_jar_on_path
+if not defined BOOTSTRAP_JAR call :download_bootstrap_jar
+if not defined BOOTSTRAP_JAR (
+	echo %E_ERR% packwiz-installer-bootstrap.jar下载失败,请尝试手动下载并放到MC版本文件夹中
+	echo packwiz-installer-bootstrap.jar 下载链接: https://github.com/packwiz/packwiz-installer-bootstrap/releases/download/v0.0.3/packwiz-installer-bootstrap.jar
+	echo %C_GRN% 链接已自动复制到剪切板, 可直接ctrl + v 或 win + v粘贴使用 %C_RST%
+	echo https://github.com/packwiz/packwiz-installer-bootstrap/releases/download/v0.0.3/packwiz-installer-bootstrap.jar | clip
+	exit /b 0
+)
+
+rem packwiz-installer.jar准备
+if not defined INSTALLER_JAR call :find_installer_jar_on_path
+if not defined INSTALLER_JAR call :download_installer_jar
+if not defined INSTALLER_JAR (
+	echo %E_ERR% packwiz-installer.jar下载失败,请尝试手动下载并放到MC版本文件夹中
+	echo packwiz-installer.jar 下载链接: https://github.com/packwiz/packwiz-installer/releases/latest/download/packwiz-installer.jar
+	echo %C_GRN% 链接已自动复制到剪切板, 可直接ctrl + v 或 win + v粘贴使用 %C_RST%
+	echo https://github.com/packwiz/packwiz-installer/releases/latest/download/packwiz-installer.jar | clip
+	exit /b 0
+)
+
+
+
+
 
 echo.
 echo ========================================================
@@ -417,10 +443,6 @@ echo ========================================================
 call :stop_serve
 call :write_pcl_cmd
 
-
-
-
-pause
 exit /b 0
 
 rem=========================================================
@@ -1374,3 +1396,54 @@ echo %E_SUB% {verpath} 展开为版本文件夹, $INST_JAVA 展开为启动器指定的Java
 goto :eof
 
 
+:find_bootstrap_jar_on_path
+set "BOOTSTRAP_JAR="
+if exist "!MC_VERSION_DIR_PATH!\packwiz-installer-bootstrap.jar" (
+	set "BOOTSTRAP_JAR=!MC_VERSION_DIR_PATH!\packwiz-installer-bootstrap.jar"
+	echo 在MC版本文件夹定位到packwiz-installer-bootstrap.jar
+	exit /b 0
+)
+exit /b 1
+
+
+:download_bootstrap_jar
+set "BOOTSTRAP_JAR_URL=https://github.com/packwiz/packwiz-installer-bootstrap/releases/download/v0.0.3/packwiz-installer-bootstrap.jar"
+echo %E_INFO% 下载 packwiz-installer-bootstrap.jar
+set "DL_URL=!BOOTSTRAP_JAR_URL!"
+set "DL_OUT=!MC_VERSION_DIR_PATH!\packwiz-installer-bootstrap.jar"
+set "DL_MIN=1000000"
+call :dl
+if not exist "!MC_VERSION_DIR_PATH!\packwiz-installer-bootstrap.jar" (
+    echo %E_ERR%  packwiz-installer-bootstrap.jar 下载失败
+    exit /b 1
+)
+echo %E_INFO% 下载 packwiz-installer-bootstrap.jar成功
+set "BOOTSTRAP_JAR=!MC_VERSION_DIR_PATH!\packwiz-installer-bootstrap.jar"
+exit /b 0
+
+
+:find_installer_jar_on_path
+set "INSTALLER_JAR="
+if exist "!MC_VERSION_DIR_PATH!\packwiz-installer.jar" (
+	set "INSTALLER_JAR=!MC_VERSION_DIR_PATH!\packwiz-installer.jar"
+	echo 在MC版本文件夹定位到packwiz-installer.jar
+	exit /b 0
+)
+exit /b 1
+
+
+
+:download_installer_jar
+set "INSTALLER_JAR_URL=https://github.com/packwiz/packwiz-installer/releases/latest/download/packwiz-installer.jar"
+echo %E_INFO% 下载 packwiz-installer.jar
+set "DL_URL=!INSTALLER_JAR_URL!"
+set "DL_OUT=!MC_VERSION_DIR_PATH!\packwiz-installer.jar"
+set "DL_MIN=1000000"
+call :dl
+if not exist "!MC_VERSION_DIR_PATH!\packwiz-installer.jar" (
+    echo %E_ERR%  packwiz-installer.jar 下载失败
+    exit /b 1
+)
+echo %E_INFO% 下载 packwiz-installer.jar成功
+set "INSTALLER_JAR=!MC_VERSION_DIR_PATH!\packwiz-installer.jar"
+exit /b 0
