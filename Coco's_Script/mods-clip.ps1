@@ -1,54 +1,54 @@
-ï»¿#requires -version 5
+#requires -version 5
 <#
-  mods-clip.ps1 â€”â€” packwiz å…ƒæ•°æ®è£å‰ª(å®¢æˆ·ç«¯æ¨¡ç»„åˆ†ç±» + æŒ‰äººåˆ å‡), å…¥å£æ˜¯ modè£å‰ªè„šæœ¬.bat
+  mods-clip.ps1 ¡ª¡ª packwiz ÔªÊı¾İ²Ã¼ô(¿Í»§¶ËÄ£×é·ÖÀà + °´ÈËÉ¾¼õ), Èë¿ÚÊÇ mod²Ã¼ô½Å±¾.bat
 
-  ä½ç½®ä¸è§’è‰²:
-    å’Œ [å®¢æˆ·ç«¯]modåå¤„ç†ä¿®å¤è„šæœ¬ é…å¯¹ä½¿ç”¨.
-      åå¤„ç†ä¿®å¤ = è£…å®Œä¹‹åä¿® jar / é…ç½®
-      å‰ç½®è£å‰ª   = è£…ä¹‹å‰åŠ¨å…ƒæ•°æ®, å†³å®šå“ªäº›æ¨¡ç»„æ ¹æœ¬ä¸è½åœ°
-    ç”± [å®¢æˆ·ç«¯]modæ›´æ–°è„šæœ¬.bat åœ¨ packwiz refresh ä¹‹åã€å®‰è£…å™¨ä¹‹å‰è°ƒç”¨(-InPlace),
-    æ‰€ä»¥æ°¸è¿œä½œç”¨åœ¨æœ¬æ¬¡åˆšæ‹‰ä¸‹æ¥çš„é‚£ä»½å…ƒæ•°æ®ä¸Š, ä¸å­˜åœ¨"ç”¨çš„è¿˜æ˜¯ä¸Šä¸€ç‰ˆå…ƒæ•°æ®"çš„é—®é¢˜.
-    ä¹Ÿå¯ä»¥å•ç‹¬åŒå‡»è¿è¡Œ: ç”¨ç¼“å­˜é‡Œçš„å…ƒæ•°æ®å…ˆå‰ªä¸€é, é¡ºæ‰‹æŠŠåˆ†ç±»æŠ¥å‘Šåˆ·å‡ºæ¥.
+  Î»ÖÃÓë½ÇÉ«:
+    ºÍ [¿Í»§¶Ë]modºó´¦ÀíĞŞ¸´½Å±¾ Åä¶ÔÊ¹ÓÃ.
+      ºó´¦ÀíĞŞ¸´ = ×°ÍêÖ®ºóĞŞ jar / ÅäÖÃ
+      Ç°ÖÃ²Ã¼ô   = ×°Ö®Ç°¶¯ÔªÊı¾İ, ¾ö¶¨ÄÄĞ©Ä£×é¸ù±¾²»ÂäµØ
+    ÓÉ [¿Í»§¶Ë]mod¸üĞÂ½Å±¾.bat ÔÚ packwiz refresh Ö®ºó¡¢°²×°Æ÷Ö®Ç°µ÷ÓÃ(-InPlace),
+    ËùÒÔÓÀÔ¶×÷ÓÃÔÚ±¾´Î¸ÕÀ­ÏÂÀ´µÄÄÇ·İÔªÊı¾İÉÏ, ²»´æÔÚ"ÓÃµÄ»¹ÊÇÉÏÒ»°æÔªÊı¾İ"µÄÎÊÌâ.
+    Ò²¿ÉÒÔµ¥¶ÀË«»÷ÔËĞĞ: ÓÃ»º´æÀïµÄÔªÊı¾İÏÈ¼ôÒ»±é, Ë³ÊÖ°Ñ·ÖÀà±¨¸æË¢³öÀ´.
 
-  å®ƒåšä»€ä¹ˆ:
-    1) æ‰« meta\mods\**.pw.toml, è¯» side å­—æ®µ, æŠŠæ¨¡ç»„åˆ†æˆä¸‰ç±»:
-         ä»…å®¢æˆ·ç«¯ side="client"   åŒç«¯ side="both" æˆ–æ—  side   ä»…æœåŠ¡ç«¯ side="server"
-    2) ç”Ÿæˆ / ç»´æŠ¤ä¸€ä»½äººè¯æ¸…å• [å®¢æˆ·ç«¯]æ¨¡ç»„è£å‰ªæ¸…å•.txt
-         è¡Œé¦– #  æ³¨é‡Šæ‰ = ä¿ç•™(é»˜è®¤å…¨æ˜¯è¿™ä¸ªçŠ¶æ€)
-         è¡Œé¦– -  è£å‰ª, æœ¬æœºä¸è£…
-         è¡Œé¦– +  å¼ºåˆ¶ä¿ç•™, ç™½åå•æ¨¡å¼ä¸‹å¿…é¡»æ˜¾å¼å†™ +
-       æ¸…å•åªæŒ‰ metafile ç›¸å¯¹è·¯å¾„è®°, å…ƒæ•°æ®æ¢ç‰ˆæœ¬ä¹Ÿä¸ä¼šé”™ä½.
-    3) æŒ‰æ¸…å•æŠŠå¯¹åº” .pw.toml ä»å…ƒæ•°æ®ç›®å½•åˆ æ‰, å¹¶åˆ æ‰ mods é‡Œå·²ç»è½åœ°çš„ jar,
-       å†ç”± packwiz refresh é‡å»º index.toml ä¸ pack.toml å“ˆå¸Œ, å®‰è£…å™¨å°±ä¸ä¼šå†è£…å›æ¥.
-    4) å‡ºæŠ¥å‘Š [å®¢æˆ·ç«¯]æ¨¡ç»„åˆ†ç±»æŠ¥å‘Š.txt ä¸ %CACHE_ROOT%\mod-classify.tsv(æœºå™¨å¯è¯»).
+  Ëü×öÊ²Ã´:
+    1) É¨ meta\mods\**.pw.toml, ¶Á side ×Ö¶Î, °ÑÄ£×é·Ö³ÉÈıÀà:
+         ½ö¿Í»§¶Ë side="client"   Ë«¶Ë side="both" »òÎŞ side   ½ö·şÎñ¶Ë side="server"
+    2) Éú³É / Î¬»¤Ò»·İÈË»°Çåµ¥ [¿Í»§¶Ë]Ä£×é²Ã¼ôÇåµ¥.txt
+         ĞĞÊ× #  ×¢ÊÍµô = ±£Áô(Ä¬ÈÏÈ«ÊÇÕâ¸ö×´Ì¬)
+         ĞĞÊ× -  ²Ã¼ô, ±¾»ú²»×°
+         ĞĞÊ× +  Ç¿ÖÆ±£Áô, °×Ãûµ¥Ä£Ê½ÏÂ±ØĞëÏÔÊ½Ğ´ +
+       Çåµ¥Ö»°´ metafile Ïà¶ÔÂ·¾¶¼Ç, ÔªÊı¾İ»»°æ±¾Ò²²»»á´íÎ».
+    3) °´Çåµ¥°Ñ¶ÔÓ¦ .pw.toml ´ÓÔªÊı¾İÄ¿Â¼É¾µô, ²¢É¾µô mods ÀïÒÑ¾­ÂäµØµÄ jar,
+       ÔÙÓÉ packwiz refresh ÖØ½¨ index.toml Óë pack.toml ¹şÏ£, °²×°Æ÷¾Í²»»áÔÙ×°»ØÀ´.
+    4) ³ö±¨¸æ [¿Í»§¶Ë]Ä£×é·ÖÀà±¨¸æ.txt Óë %CACHE_ROOT%\mod-classify.tsv(»úÆ÷¿É¶Á).
 
-  æ¨¡å¼:
-    blacklist é»˜è®¤. åªæœ‰å†™äº† - çš„è¡Œè¢«è£æ‰, å…¶ä½™å…¨è£….
-    whitelist ç™½åå•. ä»…å®¢æˆ·ç«¯æ¨¡ç»„é»˜è®¤å…¨éƒ¨è£æ‰, åªæœ‰å†™äº† + çš„ä¿ç•™;
-              åŒç«¯æ¨¡ç»„ä¸åƒè¿™å¥—(å®ƒä»¬æœåŠ¡ç«¯ä¹Ÿè¦, ä¸€å¾‹ä¿ç•™, æƒ³å‰ªå¿…é¡»è‡ªå·±å†™ -).
-    æƒ³ç»™ä¸åŒçš„äººä¸åŒçš„è£å‰ªç»“æœ, å°±å„äººæ”¾å„è‡ªçš„æ¸…å•, æˆ–è€…ç”¨ -Profile åå­—åŒºåˆ†æ¸…å•æ–‡ä»¶.
+  Ä£Ê½:
+    blacklist Ä¬ÈÏ. Ö»ÓĞĞ´ÁË - µÄĞĞ±»²Ãµô, ÆäÓàÈ«×°.
+    whitelist °×Ãûµ¥. ½ö¿Í»§¶ËÄ£×éÄ¬ÈÏÈ«²¿²Ãµô, Ö»ÓĞĞ´ÁË + µÄ±£Áô;
+              Ë«¶ËÄ£×é²»³ÔÕâÌ×(ËüÃÇ·şÎñ¶ËÒ²Òª, Ò»ÂÉ±£Áô, Ïë¼ô±ØĞë×Ô¼ºĞ´ -).
+    Ïë¸ø²»Í¬µÄÈË²»Í¬µÄ²Ã¼ô½á¹û, ¾Í¸÷ÈË·Å¸÷×ÔµÄÇåµ¥, »òÕßÓÃ -Profile Ãû×ÖÇø·ÖÇåµ¥ÎÄ¼ş.
 
-  ä¸åšä»€ä¹ˆ:
-    ä¸ç¢° config / resourcepacks / saves; ä¸åŠ¨æœåŠ¡ç«¯åŒ…; ä¸æ”¹å…ƒæ•°æ®ä»“è¿œç«¯.
-    è¿œç«¯åŒ…æ¨¡å¼(PACK_SOURCE=remote)ä¸‹å…ƒæ•°æ®ä¸åœ¨æœ¬æœº, æœ¬è„šæœ¬åªå‡ºæŠ¥å‘Šä¸æ”¹æ–‡ä»¶.
+  ²»×öÊ²Ã´:
+    ²»Åö config / resourcepacks / saves; ²»¶¯·şÎñ¶Ë°ü; ²»¸ÄÔªÊı¾İ²ÖÔ¶¶Ë.
+    Ô¶¶Ë°üÄ£Ê½(PACK_SOURCE=remote)ÏÂÔªÊı¾İ²»ÔÚ±¾»ú, ±¾½Å±¾Ö»³ö±¨¸æ²»¸ÄÎÄ¼ş.
 
-  ç”¨æ³•:
-    åŒå‡» = äº¤äº’æŒ‘é€‰(å¸¦ç¼–å·çš„å®¢æˆ·ç«¯æ¨¡ç»„åˆ—è¡¨, è¾“å…¥ç¼–å·å³è£å‰ª/æ¢å¤), ç»“æŸåæŒ‰æç¤ºé€€å‡º
-    modè£å‰ªè„šæœ¬.bat -Quiet            é™é»˜æŒ‰æ¸…å•æ‰§è¡Œ, ç»™ PCL å¯åŠ¨å‰æŒ‡ä»¤é“¾ç”¨
-    modè£å‰ªè„šæœ¬.bat -List             åªæ‰“å°åˆ†ç±», ä»€ä¹ˆéƒ½ä¸æ”¹
-    modè£å‰ªè„šæœ¬.bat -Pick             äº¤äº’æŒ‘é€‰åå†æ‰§è¡Œ
-    modè£å‰ªè„šæœ¬.bat -Profile å°éœ¸ç‹    æ¢ä¸€ä»½æ¸…å•(æ¸…å•æ–‡ä»¶åå¸¦åç¼€)
-    modè£å‰ªè„šæœ¬.bat -Reset            å¤‡ä»½æ—§æ¸…å•åé‡æ–°ç”Ÿæˆ(å…¨éƒ¨ä¿ç•™)
-    modè£å‰ªè„šæœ¬.bat -Plan             åªå‡ºæŠ¥å‘Šä¸æ¸…å•, ä¸åˆ ä»»ä½•æ–‡ä»¶
-    modè£å‰ªè„šæœ¬.bat --help            çœ‹å…¨éƒ¨å‚æ•°
+  ÓÃ·¨:
+    Ë«»÷ = ½»»¥ÌôÑ¡(´ø±àºÅµÄ¿Í»§¶ËÄ£×éÁĞ±í, ÊäÈë±àºÅ¼´²Ã¼ô/»Ö¸´), ½áÊøºó°´ÌáÊ¾ÍË³ö
+    mod²Ã¼ô½Å±¾.bat -Quiet            ¾²Ä¬°´Çåµ¥Ö´ĞĞ, ¸ø PCL Æô¶¯Ç°Ö¸ÁîÁ´ÓÃ
+    mod²Ã¼ô½Å±¾.bat -List             Ö»´òÓ¡·ÖÀà, Ê²Ã´¶¼²»¸Ä
+    mod²Ã¼ô½Å±¾.bat -Pick             ½»»¥ÌôÑ¡ºóÔÙÖ´ĞĞ
+    mod²Ã¼ô½Å±¾.bat -Profile Ğ¡°ÔÍõ    »»Ò»·İÇåµ¥(Çåµ¥ÎÄ¼şÃû´øºó×º)
+    mod²Ã¼ô½Å±¾.bat -Reset            ±¸·İ¾ÉÇåµ¥ºóÖØĞÂÉú³É(È«²¿±£Áô)
+    mod²Ã¼ô½Å±¾.bat -Plan             Ö»³ö±¨¸æÓëÇåµ¥, ²»É¾ÈÎºÎÎÄ¼ş
+    mod²Ã¼ô½Å±¾.bat --help            ¿´È«²¿²ÎÊı
 
-  å¯å†™è¿› modæ›´æ–°æº.cfg çš„é”®(ä¼˜å…ˆçº§ä½äºå‘½ä»¤è¡Œå‚æ•°):
-    PRE_TRIM=1              0 = æ›´æ–°è„šæœ¬ä¸å†è°ƒç”¨å‰ç½®è£å‰ª
-    PRE_PROFILE=default     æ¸…å•æ–‡ä»¶åç¼€, default = ä¸å¸¦åç¼€
+  ¿ÉĞ´½ø mod¸üĞÂÔ´.cfg µÄ¼ü(ÓÅÏÈ¼¶µÍÓÚÃüÁîĞĞ²ÎÊı):
+    PRE_TRIM=1              0 = ¸üĞÂ½Å±¾²»ÔÙµ÷ÓÃÇ°ÖÃ²Ã¼ô
+    PRE_PROFILE=default     Çåµ¥ÎÄ¼şºó×º, default = ²»´øºó×º
     PRE_TRIM_MODE=blacklist blacklist / whitelist
-    PRE_TOUCH_MODS=1        0 = åªåˆ å…ƒæ•°æ®, ä¸åŠ¨ mods é‡Œå·²æœ‰çš„ jar
-    PRE_FAIL_HARD=0         1 = è£å‰ªå¤±è´¥å°±è®©æ›´æ–°è„šæœ¬å¤±è´¥ä¸­æ­¢
-    PRE_MAX_TRIM=0          ä¸€æ¬¡æœ€å¤šè£å¤šå°‘ä¸ª, 0 = ä¸é™åˆ¶(è¶…è¿‡ 90% ä¹Ÿä¼šè¢«æ‹¦)
+    PRE_TOUCH_MODS=1        0 = Ö»É¾ÔªÊı¾İ, ²»¶¯ mods ÀïÒÑÓĞµÄ jar
+    PRE_FAIL_HARD=0         1 = ²Ã¼ôÊ§°Ü¾ÍÈÃ¸üĞÂ½Å±¾Ê§°ÜÖĞÖ¹
+    PRE_MAX_TRIM=0          Ò»´Î×î¶à²Ã¶àÉÙ¸ö, 0 = ²»ÏŞÖÆ(³¬¹ı 90% Ò²»á±»À¹)
 #>
 [CmdletBinding()]
 param(
@@ -77,8 +77,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-# æ§åˆ¶å°ç¼–ç è·Ÿè°ƒç”¨æ–¹èµ°: æœ¬ç›®å½•çš„ bat éƒ½ä¼šå…ˆ chcp 936, æ‰€ä»¥ä»å¯åŠ¨é“¾è¿›æ¥å°±æ˜¯ 936;
-# è„šæœ¬å†™å‡ºçš„æ¸…å•/æŠ¥å‘Š/æ—¥å¿—æŒ‰çº¦å®šå›ºå®š GBK(936) è½ç›˜, ä¸ PCLå¯åŠ¨å‰å‘½ä»¤.txt ä¸€è‡´
+# ¿ØÖÆÌ¨±àÂë¸úµ÷ÓÃ·½×ß: ±¾Ä¿Â¼µÄ bat ¶¼»áÏÈ chcp 936, ËùÒÔ´ÓÆô¶¯Á´½øÀ´¾ÍÊÇ 936;
+# ½Å±¾Ğ´³öµÄÇåµ¥/±¨¸æ/ÈÕÖ¾°´Ô¼¶¨¹Ì¶¨ GBK(936) ÂäÅÌ, Óë PCLÆô¶¯Ç°ÃüÁî.txt Ò»ÖÂ
 
 $script:VER = '1.0.0'
 $script:TS = Get-Date -Format 'yyyyMMdd-HHmmss'
@@ -90,34 +90,35 @@ $script:TrimCount = 0
 $script:JarDeleted = 0
 $script:JarBytes = 0
 $script:Changed = 0
-$script:RefreshState = 'æœªæ‰§è¡Œ'
+$script:RefreshState = 'Î´Ö´ĞĞ'
 
-# æ¸…å•ä¸æŠ¥å‘Šè·Ÿè„šæœ¬æ”¾ä¸€èµ·(Coco's Script\), ä¸å¾€æ•´åˆåŒ…æ ¹ç›®å½•ä¸¢æ–‡ä»¶
+# Çåµ¥Óë±¨¸æ¸ú½Å±¾·ÅÒ»Æğ(Coco's Script\), ²»ÍùÕûºÏ°ü¸ùÄ¿Â¼¶ªÎÄ¼ş
 $script:SCRIPT_DIR = $PSScriptRoot
+
 if ($script:SCRIPT_DIR) { $script:SCRIPT_DIR = $script:SCRIPT_DIR.TrimEnd('\') }
 
-$LIST_DEFAULT = '[å®¢æˆ·ç«¯]æ¨¡ç»„è£å‰ªæ¸…å•.txt'
-$REPORT_NAME = '[å®¢æˆ·ç«¯]æ¨¡ç»„åˆ†ç±»æŠ¥å‘Š.txt'
+$LIST_DEFAULT = '[¿Í»§¶Ë]Ä£×é²Ã¼ôÇåµ¥.txt'
+$REPORT_NAME = '[¿Í»§¶Ë]Ä£×é·ÖÀà±¨¸æ.txt'
 
 # ===========================================================================
-#  è¾“å‡ºä¸æ—¥å¿—
+#  Êä³öÓëÈÕÖ¾
 # ===========================================================================
 function Say([string]$m) { if (-not $script:IsQuiet) { Write-Host $m } }
-function Info([string]$m) { Write-Host "[ä¿¡æ¯] $m" }
-function Ok([string]$m) { Write-Host "[å®Œæˆ] $m" }
-function ErrMsg([string]$m) { Write-Host "[é”™è¯¯] $m" }
+function Info([string]$m) { Write-Host "[ĞÅÏ¢] $m" }
+function Ok([string]$m) { Write-Host "[Íê³É] $m" }
+function ErrMsg([string]$m) { Write-Host "[´íÎó] $m" }
 function Log([string]$m) {
     if (-not $script:LogFile) { return }
     try { [IO.File]::AppendAllText($script:LogFile, "$m`r`n", [Text.Encoding]::GetEncoding(936)) } catch { }
 }
 function Warn([string]$m) {
     [void]$script:Warns.Add($m)
-    Write-Host "[è­¦å‘Š] $m"
+    Write-Host "[¾¯¸æ] $m"
     Log "[warn] $m"
 }
 
 # ===========================================================================
-#  æ–‡æœ¬è¯»å†™: .pw.toml æ˜¯ UTF-8, æ¸…å•ä¸æŠ¥å‘Šè·Ÿæ•´åˆåŒ…å…¶å®ƒæ–‡ä»¶ä¸€æ ·èµ° GBK(936)
+#  ÎÄ±¾¶ÁĞ´: .pw.toml ÊÇ UTF-8, Çåµ¥Óë±¨¸æ¸úÕûºÏ°üÆäËüÎÄ¼şÒ»Ñù×ß GBK(936)
 # ===========================================================================
 function Read-TextAuto([string]$path) {
     $bytes = [IO.File]::ReadAllBytes($path)
@@ -162,7 +163,7 @@ function Get-Sha256Hex([string]$path) {
 }
 
 # ===========================================================================
-#  å¤–éƒ¨ç¨‹åº
+#  Íâ²¿³ÌĞò
 # ===========================================================================
 function Invoke-Native([string]$exe, [string[]]$argv, [string]$workDir) {
     $out = @()
@@ -209,9 +210,9 @@ function Find-Git {
 }
 
 # ===========================================================================
-#  è·¯å¾„ä¸é…ç½®
+#  Â·¾¶ÓëÅäÖÃ
 # ===========================================================================
-# ç»Ÿä¸€è·¯å¾„: ä»è„šæœ¬ä½ç½®å¾€ä¸Šæœ€å¤š 3 å±‚, æ‰¾å« mods çš„å®ä¾‹ç›®å½•(è„šæœ¬ä½åœ¨ <å®ä¾‹>\Coco's Script\)
+# Í³Ò»Â·¾¶: ´Ó½Å±¾Î»ÖÃÍùÉÏ×î¶à 3 ²ã, ÕÒº¬ mods µÄÊµÀıÄ¿Â¼(½Å±¾×¡ÔÚ <ÊµÀı>\Coco's Script\)
 function Resolve-InstanceDir([string]$p) {
     if ($p -and (Test-Path -LiteralPath (Join-Path $p 'mods'))) { return (Resolve-Path -LiteralPath $p).Path.TrimEnd('\') }
     if ($p -and (Test-Path -LiteralPath $p)) { return (Resolve-Path -LiteralPath $p).Path.TrimEnd('\') }
@@ -253,7 +254,7 @@ function Get-CfgValue($cfg, [string]$key, [string]$def) {
 }
 
 # ===========================================================================
-#  packwiz å…ƒæ•°æ®è§£æ
+#  packwiz ÔªÊı¾İ½âÎö
 # ===========================================================================
 function Get-TomlString([string]$text, [string]$key) {
     $pat = '(?m)^[ \t]*' + [regex]::Escape($key) + '[ \t]*=[ \t]*"([^"\r\n]*)"'
@@ -274,8 +275,8 @@ function Test-LibraryName([string]$name, [string]$file) {
 }
 
 function Repair-MixedUtf8([string]$path) {
-    # é€å­—èŠ‚å¤„ç†: èƒ½æŒ‰ UTF-8 è§£å¼€å°±åŸæ ·ä¿ç•™, è§£ä¸å¼€çš„å°±å½“ GBK åŒå­—èŠ‚é‡æ–°ç¼–ç æˆ UTF-8
-    # åªç”¨äºæœ¬æœºå…ƒæ•°æ®ç¼“å­˜çš„è‡ªæ•‘; è¿”å› $true è¡¨ç¤ºç¡®å®æ”¹å†™è¿‡
+    # Öğ×Ö½Ú´¦Àí: ÄÜ°´ UTF-8 ½â¿ª¾ÍÔ­Ñù±£Áô, ½â²»¿ªµÄ¾Íµ± GBK Ë«×Ö½ÚÖØĞÂ±àÂë³É UTF-8
+    # Ö»ÓÃÓÚ±¾»úÔªÊı¾İ»º´æµÄ×Ô¾È; ·µ»Ø $true ±íÊ¾È·Êµ¸ÄĞ´¹ı
     $b = [IO.File]::ReadAllBytes($path)
     $out = New-Object System.Collections.Generic.List[byte]
     $strict = New-Object System.Text.UTF8Encoding($false, $true)
@@ -317,8 +318,8 @@ function Repair-MixedUtf8([string]$path) {
 }
 
 function Get-IndexHostedFiles([string]$root) {
-    # ä» index.toml é‡Œæ"ç›´æ¥æ‰˜ç®¡åœ¨å…ƒæ•°æ®ä»“"çš„ mods/ æ–‡ä»¶(ä¸æ˜¯ metafile, æ²¡æœ‰ .pw.toml)
-    # è¿™äº› jar æ²¡æœ‰ side å­—æ®µ, packwiz ä¼šç…§è£…ä¸¤ç«¯, ä½†ä¸€æ ·åº”è¯¥èƒ½è¢«è£å‰ª
+    # ´Ó index.toml ÀïÀÌ"Ö±½ÓÍĞ¹ÜÔÚÔªÊı¾İ²Ö"µÄ mods/ ÎÄ¼ş(²»ÊÇ metafile, Ã»ÓĞ .pw.toml)
+    # ÕâĞ© jar Ã»ÓĞ side ×Ö¶Î, packwiz »áÕÕ×°Á½¶Ë, µ«Ò»ÑùÓ¦¸ÃÄÜ±»²Ã¼ô
     $out = New-Object System.Collections.ArrayList
     $idx = Join-Path $root 'index.toml'
     if (-not (Test-Path -LiteralPath $idx)) { return $out }
@@ -395,8 +396,8 @@ function Get-ModEntries([string]$root) {
         [void]$out.Add($obj)
     }
 
-    # ç›´æ¥æ‰˜ç®¡åœ¨å…ƒæ•°æ®ä»“é‡Œçš„ mods/*.jar: æ²¡æœ‰ .pw.toml, ä¹Ÿæ²¡æœ‰ side
-    # å½’åˆ°"æ‰˜ç®¡"ä¸€æ¡£, ä¸€æ ·è¿›æ¸…å•ã€ä¸€æ ·èƒ½è£
+    # Ö±½ÓÍĞ¹ÜÔÚÔªÊı¾İ²ÖÀïµÄ mods/*.jar: Ã»ÓĞ .pw.toml, Ò²Ã»ÓĞ side
+    # ¹éµ½"ÍĞ¹Ü"Ò»µµ, Ò»Ñù½øÇåµ¥¡¢Ò»ÑùÄÜ²Ã
     foreach ($hf in (Get-IndexHostedFiles $root)) {
         $abs = Join-Path $root ($hf.Rel.Replace('/', '\'))
         if (-not (Test-Path -LiteralPath $abs)) { continue }
@@ -431,15 +432,15 @@ function Get-ModEntries([string]$root) {
 
 function Get-SideText([string]$side) {
     switch ($side) {
-        'client' { return 'ä»…å®¢æˆ·ç«¯' }
-        'server' { return 'ä»…æœåŠ¡ç«¯' }
-        'hosted' { return 'æ‰˜ç®¡' }
-        default { return 'åŒç«¯' }
+        'client' { return '½ö¿Í»§¶Ë' }
+        'server' { return '½ö·şÎñ¶Ë' }
+        'hosted' { return 'ÍĞ¹Ü' }
+        default { return 'Ë«¶Ë' }
     }
 }
 
 # ===========================================================================
-#  è£å‰ªæ¸…å•: è§£æ / ç”Ÿæˆ / åˆå¹¶ / æ”¹å†™å•è¡Œ
+#  ²Ã¼ôÇåµ¥: ½âÎö / Éú³É / ºÏ²¢ / ¸ÄĞ´µ¥ĞĞ
 # ===========================================================================
 function Get-LineInfo([string]$line) {
     if (-not $line) { return $null }
@@ -451,7 +452,7 @@ function Get-LineInfo([string]$line) {
     $marker = ''
     $c = $body.Substring(0, 1)
     if ($c -eq '#') {
-        # "#- xxx" æ˜¯è¢«æ³¨é‡Šæ‰çš„è£å‰ªè¡Œ, ä»ç„¶ç®—"æ¸…å•é‡Œæåˆ°è¿‡", ä½†ä¸ç”Ÿæ•ˆ
+        # "#- xxx" ÊÇ±»×¢ÊÍµôµÄ²Ã¼ôĞĞ, ÈÔÈ»Ëã"Çåµ¥ÀïÌáµ½¹ı", µ«²»ÉúĞ§
         $body = $body.Substring(1).Trim()
         if ($body -and ($body.Substring(0, 1) -eq '-' -or $body.Substring(0, 1) -eq '+')) { $body = $body.Substring(1).Trim() }
         $marker = '#'
@@ -460,8 +461,8 @@ function Get-LineInfo([string]$line) {
         $body = $body.Substring(1).Trim()
     }
     if (-not $body) { return $null }
-    # æ—¢è®¤ mods/*.pw.toml, ä¹Ÿè®¤ç›´æ¥æ‰˜ç®¡åœ¨ä»“é‡Œçš„ mods/*.jar è¿™ç±»æ–‡ä»¶
-    # åªè®¤"åƒæ–‡ä»¶å"çš„æ¡ç›®, å…å¾—æŠŠè¯´æ˜æ–‡å­—å½“æˆè£å‰ªé¡¹
+    # ¼ÈÈÏ mods/*.pw.toml, Ò²ÈÏÖ±½ÓÍĞ¹ÜÔÚ²ÖÀïµÄ mods/*.jar ÕâÀàÎÄ¼ş
+    # Ö»ÈÏ"ÏñÎÄ¼şÃû"µÄÌõÄ¿, ÃâµÃ°ÑËµÃ÷ÎÄ×Öµ±³É²Ã¼ôÏî
     $norm = $body.Replace('\', '/').TrimStart('/')
     if (-not $norm.ToLowerInvariant().StartsWith('mods/')) { $norm = 'mods/' + $norm }
     if ((Split-Path -Leaf $norm) -notmatch '\.(pw\.toml|jar|zip|disabled)$') { return $null }
@@ -500,39 +501,39 @@ function Read-TrimList([string]$path) {
 function New-TrimListText($entries, [string]$modeName, [string]$metaRoot) {
     $sb = New-Object System.Text.StringBuilder
     [void]$sb.AppendLine('# ============================================================================')
-    [void]$sb.AppendLine("# Coco's æ•´åˆåŒ… Â· å®¢æˆ·ç«¯æ¨¡ç»„è£å‰ªæ¸…å•")
+    [void]$sb.AppendLine("# Coco's ÕûºÏ°ü ¡¤ ¿Í»§¶ËÄ£×é²Ã¼ôÇåµ¥")
     [void]$sb.AppendLine('#')
-    [void]$sb.AppendLine('# ç”¨æ³•: æƒ³åœ¨æœ¬æœºä¸è£…çš„æ¨¡ç»„, æŠŠå¯¹åº”è¡Œè¡Œé¦–çš„ # å»æ‰, å˜æˆ " - " å¼€å¤´; æƒ³è£…å›æ¥å°±é‡æ–°åŠ å› #')
-    [void]$sb.AppendLine('#       è¡Œé¦– -  è£å‰ª(æœ¬æœºä¸è£…)      è¡Œé¦– +  å¼ºåˆ¶ä¿ç•™      è¡Œé¦– #  æ³¨é‡Š / ä¿ç•™')
-    [void]$sb.AppendLine('#       æ”¹å®Œä¿å­˜, ä¸‹æ¬¡å¯åŠ¨æ¸¸æˆè‡ªåŠ¨ç”Ÿæ•ˆ; ä¹Ÿå¯ä»¥ç›´æ¥è·‘ modè£å‰ªè„šæœ¬.bat -Pick äº¤äº’æŒ‘')
+    [void]$sb.AppendLine('# ÓÃ·¨: ÏëÔÚ±¾»ú²»×°µÄÄ£×é, °Ñ¶ÔÓ¦ĞĞĞĞÊ×µÄ # È¥µô, ±ä³É " - " ¿ªÍ·; Ïë×°»ØÀ´¾ÍÖØĞÂ¼Ó»Ø #')
+    [void]$sb.AppendLine('#       ĞĞÊ× -  ²Ã¼ô(±¾»ú²»×°)      ĞĞÊ× +  Ç¿ÖÆ±£Áô      ĞĞÊ× #  ×¢ÊÍ / ±£Áô')
+    [void]$sb.AppendLine('#       ¸ÄÍê±£´æ, ÏÂ´ÎÆô¶¯ÓÎÏ·×Ô¶¯ÉúĞ§; Ò²¿ÉÒÔÖ±½ÓÅÜ mod²Ã¼ô½Å±¾.bat -Pick ½»»¥Ìô')
     [void]$sb.AppendLine('#')
-    [void]$sb.AppendLine('# æ¨¡å¼ MODE   blacklist = åªè£ - çš„è¡Œ(é»˜è®¤)   whitelist = ä»…å®¢æˆ·ç«¯æ¨¡ç»„åªç•™ + çš„è¡Œ')
-    [void]$sb.AppendLine("#  å½“å‰æ¨¡å¼    $modeName")
-    [void]$sb.AppendLine("#  ç”Ÿæˆæ—¶é—´    $script:Now")
-    [void]$sb.AppendLine("#  å…ƒæ•°æ®ç›®å½•  $metaRoot")
+    [void]$sb.AppendLine('# Ä£Ê½ MODE   blacklist = Ö»²Ã - µÄĞĞ(Ä¬ÈÏ)   whitelist = ½ö¿Í»§¶ËÄ£×éÖ»Áô + µÄĞĞ')
+    [void]$sb.AppendLine("#  µ±Ç°Ä£Ê½    $modeName")
+    [void]$sb.AppendLine("#  Éú³ÉÊ±¼ä    $script:Now")
+    [void]$sb.AppendLine("#  ÔªÊı¾İÄ¿Â¼  $metaRoot")
     [void]$sb.AppendLine('#')
-    [void]$sb.AppendLine('# æ³¨æ„: åç§°é‡Œå¸¦ API / Lib / Core / Framework çš„å¤šåŠæ˜¯å‰ç½®åº“, è£æ‰å‰å…ˆç¡®è®¤æ²¡æœ‰åˆ«çš„æ¨¡ç»„ä¾èµ–å®ƒ')
-    [void]$sb.AppendLine('#       åŒç«¯æ¨¡ç»„æœåŠ¡ç«¯ä¹Ÿè¦ç”¨, è£æ‰åªå½±å“æœ¬æœº; ä»…æœåŠ¡ç«¯æ¨¡ç»„å®¢æˆ·ç«¯æœ¬æ¥å°±ä¸ä¼šè£…')
+    [void]$sb.AppendLine('# ×¢Òâ: Ãû³ÆÀï´ø API / Lib / Core / Framework µÄ¶à°ëÊÇÇ°ÖÃ¿â, ²ÃµôÇ°ÏÈÈ·ÈÏÃ»ÓĞ±ğµÄÄ£×éÒÀÀµËü')
+    [void]$sb.AppendLine('#       Ë«¶ËÄ£×é·şÎñ¶ËÒ²ÒªÓÃ, ²ÃµôÖ»Ó°Ïì±¾»ú; ½ö·şÎñ¶ËÄ£×é¿Í»§¶Ë±¾À´¾Í²»»á×°')
     [void]$sb.AppendLine('# ============================================================================')
     [void]$sb.AppendLine("MODE=$modeName")
     [void]$sb.AppendLine('')
 
     $groups = @(
-        @{ Side = 'client'; Title = 'ä»…å®¢æˆ·ç«¯æ¨¡ç»„ (å¯ä»¥æ”¾å¿ƒè£)' },
-        @{ Side = 'both'; Title = 'åŒç«¯æ¨¡ç»„ (æœåŠ¡ç«¯ä¹Ÿç”¨, è£æ‰åªå½±å“æœ¬æœº)' },
-        @{ Side = 'server'; Title = 'ä»…æœåŠ¡ç«¯æ¨¡ç»„ (å®¢æˆ·ç«¯å®‰è£…å™¨æœ¬æ¥å°±è·³è¿‡)' },
-        @{ Side = 'hosted'; Title = 'æ‰˜ç®¡åœ¨å…ƒæ•°æ®ä»“çš„æ¨¡ç»„ (æ²¡æœ‰ side, ä¸¤ç«¯éƒ½ä¼šè£…)' }
+        @{ Side = 'client'; Title = '½ö¿Í»§¶ËÄ£×é (¿ÉÒÔ·ÅĞÄ²Ã)' },
+        @{ Side = 'both'; Title = 'Ë«¶ËÄ£×é (·şÎñ¶ËÒ²ÓÃ, ²ÃµôÖ»Ó°Ïì±¾»ú)' },
+        @{ Side = 'server'; Title = '½ö·şÎñ¶ËÄ£×é (¿Í»§¶Ë°²×°Æ÷±¾À´¾ÍÌø¹ı)' },
+        @{ Side = 'hosted'; Title = 'ÍĞ¹ÜÔÚÔªÊı¾İ²ÖµÄÄ£×é (Ã»ÓĞ side, Á½¶Ë¶¼»á×°)' }
     )
     foreach ($g in $groups) {
         $items = @($entries | Where-Object { $_.Side -eq $g.Side } | Sort-Object Name)
         if ($items.Count -eq 0) { continue }
-        [void]$sb.AppendLine("# ----- $($g.Title): $($items.Count) ä¸ª -----")
+        [void]$sb.AppendLine("# ----- $($g.Title): $($items.Count) ¸ö -----")
         foreach ($e in $items) {
-            $sizeTxt = 'æœªå®‰è£…'
+            $sizeTxt = 'Î´°²×°'
             if ($e.Installed) { $sizeTxt = Get-FileSizeText $e.Size }
             $flag = ''
-            if ($e.Optional) { $flag += ' [å¯é€‰]' }
-            if ($e.IsLib) { $flag += ' [ç–‘ä¼¼å‰ç½®åº“]' }
+            if ($e.Optional) { $flag += ' [¿ÉÑ¡]' }
+            if ($e.IsLib) { $flag += ' [ÒÉËÆÇ°ÖÃ¿â]' }
             $line = '#- ' + $e.Rel + '  | ' + $e.Name + ' | ' + $e.FileName + ' | ' + $sizeTxt + $flag
             [void]$sb.AppendLine($line)
         }
@@ -542,8 +543,8 @@ function New-TrimListText($entries, [string]$modeName, [string]$metaRoot) {
 }
 
 function Update-TrimList([string]$path, $entries) {
-    # ç»´æŠ¤æ¸…å•: å…ƒæ•°æ®é‡Œå·²ç»æ²¡æœ‰çš„æ¡ç›®æ¸…æ‰(åªæ¸…æ²¡å¯ç”¨çš„), æ–°å‡ºç°çš„æ¨¡ç»„è¡¥åœ¨æœ«å°¾
-    # è¿”å› @{ Added = n; Pruned = n }
+    # Î¬»¤Çåµ¥: ÔªÊı¾İÀïÒÑ¾­Ã»ÓĞµÄÌõÄ¿Çåµô(Ö»ÇåÃ»ÆôÓÃµÄ), ĞÂ³öÏÖµÄÄ£×é²¹ÔÚÄ©Î²
+    # ·µ»Ø @{ Added = n; Pruned = n }
     $state = Read-TrimList $path
     $known = @{}
     foreach ($e in $entries) { $known[$e.Rel] = 1 }
@@ -555,7 +556,7 @@ function Update-TrimList([string]$path, $entries) {
         $info = Get-LineInfo $line
         if ($info -and -not $known.ContainsKey($info.Id)) {
             if ($info.Marker -eq '-' -or $info.Marker -eq '+') {
-                # å¯ç”¨ä¸­çš„æ¡ç›®å³ä½¿å…ƒæ•°æ®é‡Œæ²¡äº†ä¹Ÿä¿ç•™, äº¤ç»™åé¢çš„"æ‰¾ä¸åˆ°"å‘Šè­¦æç¤º
+                # ÆôÓÃÖĞµÄÌõÄ¿¼´Ê¹ÔªÊı¾İÀïÃ»ÁËÒ²±£Áô, ½»¸øºóÃæµÄ"ÕÒ²»µ½"¸æ¾¯ÌáÊ¾
                 [void]$kept.Add($line)
             } else {
                 $pruned++
@@ -568,13 +569,13 @@ function Update-TrimList([string]$path, $entries) {
     $missing = @($entries | Where-Object { -not $state.Mention.ContainsKey($_.Rel) } | Sort-Object Side, Name)
     if ($missing.Count -gt 0) {
         [void]$kept.Add('')
-        [void]$kept.Add("# ----- æ–°å¢æ¨¡ç»„, ç”±è„šæœ¬è‡ªåŠ¨è¿½åŠ  $script:Now ($($missing.Count) ä¸ª) -----")
+        [void]$kept.Add("# ----- ĞÂÔöÄ£×é, ÓÉ½Å±¾×Ô¶¯×·¼Ó $script:Now ($($missing.Count) ¸ö) -----")
         foreach ($e in $missing) {
-            $sizeTxt = 'æœªå®‰è£…'
+            $sizeTxt = 'Î´°²×°'
             if ($e.Installed) { $sizeTxt = Get-FileSizeText $e.Size }
             $flag = ''
-            if ($e.Optional) { $flag += ' [å¯é€‰]' }
-            if ($e.IsLib) { $flag += ' [ç–‘ä¼¼å‰ç½®åº“]' }
+            if ($e.Optional) { $flag += ' [¿ÉÑ¡]' }
+            if ($e.IsLib) { $flag += ' [ÒÉËÆÇ°ÖÃ¿â]' }
             [void]$kept.Add('#- ' + $e.Rel + '  | ' + $e.Name + ' | ' + $e.FileName + ' | ' + $sizeTxt + ' [' + (Get-SideText $e.Side) + ']' + $flag)
             $added++
         }
@@ -599,38 +600,38 @@ function Set-TrimMarker([string]$path, [string]$id, [bool]$trim) {
 }
 
 # ===========================================================================
-#  ç´¢å¼•åˆ·æ–°ä¸å“ˆå¸Œæ ¡éªŒ
+#  Ë÷ÒıË¢ĞÂÓë¹şÏ£Ğ£Ñé
 # ===========================================================================
 function Invoke-Refresh([string]$dir) {
     $pwz = Find-Packwiz
     if (-not $pwz) {
-        $script:RefreshState = 'è·³è¿‡(æ²¡æœ‰ packwiz)'
+        $script:RefreshState = 'Ìø¹ı(Ã»ÓĞ packwiz)'
         return $false
     }
     $r = Invoke-Native $pwz @('refresh') $dir
     Log "packwiz refresh rc=$($r.ExitCode)"
     foreach ($l in $r.Output) { Log "  $l" }
     if ($r.ExitCode -ne 0) {
-        $script:RefreshState = "å¤±è´¥(rc=$($r.ExitCode))"
+        $script:RefreshState = "Ê§°Ü(rc=$($r.ExitCode))"
         return $false
     }
-    $script:RefreshState = 'å·²åˆ·æ–°'
+    $script:RefreshState = 'ÒÑË¢ĞÂ'
     return $true
 }
 
 function Test-IndexHash([string]$dir) {
     $packFile = Join-Path $dir 'pack.toml'
     $idxFile = Join-Path $dir 'index.toml'
-    if (-not (Test-Path -LiteralPath $packFile)) { return @{ Ok = $false; Msg = 'ç¼ºå°‘ pack.toml' } }
-    if (-not (Test-Path -LiteralPath $idxFile)) { return @{ Ok = $false; Msg = 'ç¼ºå°‘ index.toml' } }
+    if (-not (Test-Path -LiteralPath $packFile)) { return @{ Ok = $false; Msg = 'È±ÉÙ pack.toml' } }
+    if (-not (Test-Path -LiteralPath $idxFile)) { return @{ Ok = $false; Msg = 'È±ÉÙ index.toml' } }
     $text = Read-TextAuto $packFile
     $declared = ''
     $m = [regex]::Match($text, '(?ms)^[ \t]*\[index\][^\[]*?hash[ \t]*=[ \t]*"([^"]*)"')
     if ($m.Success) { $declared = $m.Groups[1].Value }
     $actual = Get-Sha256Hex $idxFile
-    if (-not $declared) { return @{ Ok = $false; Msg = 'pack.toml é‡Œæ²¡æœ‰ index.hash' } }
+    if (-not $declared) { return @{ Ok = $false; Msg = 'pack.toml ÀïÃ»ÓĞ index.hash' } }
     if ($declared.ToLowerInvariant() -eq $actual) { return @{ Ok = $true; Msg = 'ok' } }
-    return @{ Ok = $false; Msg = "å“ˆå¸Œä¸ä¸€è‡´ declared=$declared actual=$actual" }
+    return @{ Ok = $false; Msg = "¹şÏ£²»Ò»ÖÂ declared=$declared actual=$actual" }
 }
 
 function Repair-IndexHash([string]$dir) {
@@ -641,48 +642,48 @@ function Repair-IndexHash([string]$dir) {
     $text = Read-TextAuto $packFile
     $new = [regex]::Replace($text, '(?ms)(^[ \t]*\[index\][^\[]*?hash[ \t]*=[ \t]*")[^"]*(")', { param($m) $m.Groups[1].Value + $actual + $m.Groups[2].Value })
     if ($new -eq $text) { return $false }
-    # pack.toml å¿…é¡»æ˜¯æ—  BOM çš„ UTF-8, å¸¦ BOM ä¼šè®© packwiz çš„ TOML è§£æå™¨æŠ¥é”™
+    # pack.toml ±ØĞëÊÇÎŞ BOM µÄ UTF-8, ´ø BOM »áÈÃ packwiz µÄ TOML ½âÎöÆ÷±¨´í
     $enc = New-Object Text.UTF8Encoding($false)
     [IO.File]::WriteAllText($packFile, $new, $enc)
-    Log "index.hash æ‰‹å·¥æ”¹å†™ä¸º $actual"
+    Log "index.hash ÊÖ¹¤¸ÄĞ´Îª $actual"
     return $true
 }
 
 # ===========================================================================
-#  å¸®åŠ©
+#  °ïÖú
 # ===========================================================================
 function Show-Help {
     Write-Host ''
-    Write-Host "  Coco's æ•´åˆåŒ… - å®¢æˆ·ç«¯ Mod è£å‰ª (mods-clip) v$script:VER"
+    Write-Host "  Coco's ÕûºÏ°ü - ¿Í»§¶Ë Mod ²Ã¼ô (mods-clip) v$script:VER"
     Write-Host ''
-    Write-Host '  ä½œç”¨: åœ¨ packwiz å®‰è£…å™¨è·‘ä¹‹å‰, æŠŠå…ƒæ•°æ®é‡Œçš„å®¢æˆ·ç«¯æ¨¡ç»„æŒ‰æ¸…å•åˆ å‡æ‰,'
-    Write-Host '        å¹¶åˆ æ‰ mods é‡Œå·²ç»è½åœ°çš„ jar, è®©ä¸åŒæœºå™¨åªè£…è‡ªå·±æƒ³è¦çš„é‚£éƒ¨åˆ†.'
+    Write-Host '  ×÷ÓÃ: ÔÚ packwiz °²×°Æ÷ÅÜÖ®Ç°, °ÑÔªÊı¾İÀïµÄ¿Í»§¶ËÄ£×é°´Çåµ¥É¾¼õµô,'
+    Write-Host '        ²¢É¾µô mods ÀïÒÑ¾­ÂäµØµÄ jar, ÈÃ²»Í¬»úÆ÷Ö»×°×Ô¼ºÏëÒªµÄÄÇ²¿·Ö.'
     Write-Host ''
-    Write-Host '  å¸¸ç”¨'
-    Write-Host '    åŒå‡» modè£å‰ªè„šæœ¬.bat          äº¤äº’æŒ‘é€‰(å¸¦ç¼–å·åˆ—è¡¨), é€‰å®Œç›´æ¥ç”Ÿæ•ˆ'
-    Write-Host '    modè£å‰ªè„šæœ¬.bat -Quiet        é™é»˜æŒ‰æ¸…å•æ‰§è¡Œ, ç»™ PCL å¯åŠ¨å‰æŒ‡ä»¤é“¾ç”¨'
-    Write-Host '    modè£å‰ªè„šæœ¬.bat -List         åªæ‰“å°åˆ†ç±», ä¸åŠ¨å…ƒæ•°æ®ä¸ mods'
-    Write-Host '    modè£å‰ªè„šæœ¬.bat -Pick         äº¤äº’æŒ‘é€‰åå†æ‰§è¡Œ'
-    Write-Host '    modè£å‰ªè„šæœ¬.bat -Plan         åªå‡ºæ¸…å•ä¸æŠ¥å‘Š, ä¸åˆ æ–‡ä»¶'
-    Write-Host '    modè£å‰ªè„šæœ¬.bat -Reset        å¤‡ä»½æ—§æ¸…å•åé‡æ–°ç”Ÿæˆ(å…¨éƒ¨ä¿ç•™)'
-    Write-Host '    modè£å‰ªè„šæœ¬.bat -Profile å°éœ¸ç‹  ç”¨å¦ä¸€ä»½æ¸…å•: [å®¢æˆ·ç«¯]æ¨¡ç»„è£å‰ªæ¸…å•.å°éœ¸ç‹.txt'
-    Write-Host '    modè£å‰ªè„šæœ¬.bat --help        çœ‹è¿™ä»½å¸®åŠ©'
+    Write-Host '  ³£ÓÃ'
+    Write-Host '    Ë«»÷ mod²Ã¼ô½Å±¾.bat          ½»»¥ÌôÑ¡(´ø±àºÅÁĞ±í), Ñ¡ÍêÖ±½ÓÉúĞ§'
+    Write-Host '    mod²Ã¼ô½Å±¾.bat -Quiet        ¾²Ä¬°´Çåµ¥Ö´ĞĞ, ¸ø PCL Æô¶¯Ç°Ö¸ÁîÁ´ÓÃ'
+    Write-Host '    mod²Ã¼ô½Å±¾.bat -List         Ö»´òÓ¡·ÖÀà, ²»¶¯ÔªÊı¾İÓë mods'
+    Write-Host '    mod²Ã¼ô½Å±¾.bat -Pick         ½»»¥ÌôÑ¡ºóÔÙÖ´ĞĞ'
+    Write-Host '    mod²Ã¼ô½Å±¾.bat -Plan         Ö»³öÇåµ¥Óë±¨¸æ, ²»É¾ÎÄ¼ş'
+    Write-Host '    mod²Ã¼ô½Å±¾.bat -Reset        ±¸·İ¾ÉÇåµ¥ºóÖØĞÂÉú³É(È«²¿±£Áô)'
+    Write-Host '    mod²Ã¼ô½Å±¾.bat -Profile Ğ¡°ÔÍõ  ÓÃÁíÒ»·İÇåµ¥: [¿Í»§¶Ë]Ä£×é²Ã¼ôÇåµ¥.Ğ¡°ÔÍõ.txt'
+    Write-Host '    mod²Ã¼ô½Å±¾.bat --help        ¿´Õâ·İ°ïÖú'
     Write-Host ''
-    Write-Host '  ç»™æ›´æ–°è„šæœ¬å†…éƒ¨è°ƒç”¨(ä¸€èˆ¬ä¸ç”¨æ‰‹å†™)'
-    Write-Host '    -InPlace -MetaDir <ç›®å½•> -GameDir <ç›®å½•> -CacheRoot <ç›®å½•> -Packwiz <exe>'
-    Write-Host '        ç›´æ¥å¯¹åˆšåŒæ­¥å¥½çš„å…ƒæ•°æ®ç›®å½•åŠ¨æ‰‹, ç´¢å¼•åˆ·æ–°äº¤ç»™æ›´æ–°è„šæœ¬è‡ªå·±åš'
-    Write-Host '    -SkipMods -SkipRefresh -Hard    ç»†åˆ†å¼€å…³'
+    Write-Host '  ¸ø¸üĞÂ½Å±¾ÄÚ²¿µ÷ÓÃ(Ò»°ã²»ÓÃÊÖĞ´)'
+    Write-Host '    -InPlace -MetaDir <Ä¿Â¼> -GameDir <Ä¿Â¼> -CacheRoot <Ä¿Â¼> -Packwiz <exe>'
+    Write-Host '        Ö±½Ó¶Ô¸ÕÍ¬²½ºÃµÄÔªÊı¾İÄ¿Â¼¶¯ÊÖ, Ë÷ÒıË¢ĞÂ½»¸ø¸üĞÂ½Å±¾×Ô¼º×ö'
+    Write-Host '    -SkipMods -SkipRefresh -Hard    Ï¸·Ö¿ª¹Ø'
     Write-Host ''
-    Write-Host '  æ–‡ä»¶'
-    Write-Host "    è£å‰ªæ¸…å•  $script:SCRIPT_DIR\$script:LISTNAME"
-    Write-Host "    åˆ†ç±»æŠ¥å‘Š  $script:SCRIPT_DIR\$REPORT_NAME"
-    Write-Host "    æœºå™¨å¯è¯»  $($script:CACHE)\mod-classify.tsv"
-    Write-Host "    æ—¥å¿—      $($script:CACHE)\logs\pre-trim-*.log"
+    Write-Host '  ÎÄ¼ş'
+    Write-Host "    ²Ã¼ôÇåµ¥  $script:SCRIPT_DIR\$script:LISTNAME"
+    Write-Host "    ·ÖÀà±¨¸æ  $script:SCRIPT_DIR\$REPORT_NAME"
+    Write-Host "    »úÆ÷¿É¶Á  $($script:CACHE)\mod-classify.tsv"
+    Write-Host "    ÈÕÖ¾      $($script:CACHE)\logs\pre-trim-*.log"
     Write-Host ''
 }
 
 # ===========================================================================
-#  ä¸»æµç¨‹
+#  Ö÷Á÷³Ì
 # ===========================================================================
 $script:GAME = Resolve-InstanceDir $GameDir
 
@@ -693,15 +694,15 @@ if ($Help) {
     exit 0
 }
 
-# --- å…ƒæ•°æ®ä»“é˜²å‘†: åœ¨ä»“åº“ç›®å½•é‡Œè·‘ä¼šæŠŠæ¸…å•å†™è¿›ä»“åº“ ---
+# --- ÔªÊı¾İ²Ö·À´ô: ÔÚ²Ö¿âÄ¿Â¼ÀïÅÜ»á°ÑÇåµ¥Ğ´½ø²Ö¿â ---
 if (Test-Path -LiteralPath (Join-Path $script:GAME 'pack.toml')) {
-    ErrMsg "æœ¬ç›®å½•é‡Œæœ‰ pack.toml, çœ‹èµ·æ¥æ˜¯æ¨¡ç»„å…ƒæ•°æ®ä»“è€Œä¸æ˜¯æ•´åˆåŒ…å®ä¾‹"
-    Write-Host "       è¯·æŠŠæœ¬è„šæœ¬æ”¾è¿›æ•´åˆåŒ…å®ä¾‹ç›®å½•(å« mods ä¸ PCLå¯åŠ¨å‰å‘½ä»¤.txt çš„é‚£ä¸€å±‚)"
+    ErrMsg "±¾Ä¿Â¼ÀïÓĞ pack.toml, ¿´ÆğÀ´ÊÇÄ£×éÔªÊı¾İ²Ö¶ø²»ÊÇÕûºÏ°üÊµÀı"
+    Write-Host "       Çë°Ñ±¾½Å±¾·Å½øÕûºÏ°üÊµÀıÄ¿Â¼(º¬ mods Óë PCLÆô¶¯Ç°ÃüÁî.txt µÄÄÇÒ»²ã)"
     Log 'abort: game dir looks like metadata repo'
     exit 1
 }
 
-# --- ç¼“å­˜ç›®å½•: ä¸æ›´æ–°è„šæœ¬ä¿æŒä¸€è‡´, ä¸å¯å†™æ—¶é€€å›å®ä¾‹ç›®å½• ---
+# --- »º´æÄ¿Â¼: Óë¸üĞÂ½Å±¾±£³ÖÒ»ÖÂ, ²»¿ÉĞ´Ê±ÍË»ØÊµÀıÄ¿Â¼ ---
 if (-not $CacheRoot) { $CacheRoot = $env:COCO_CACHE_ROOT }
 if (-not $CacheRoot) { $CacheRoot = Join-Path $env:LocalAppData 'CocoPackwiz' }
 try {
@@ -718,28 +719,27 @@ $script:CACHE = (Resolve-Path -LiteralPath $CacheRoot).Path.TrimEnd('\')
 $logDir = Join-Path $script:CACHE 'logs'
 if (-not (Test-Path -LiteralPath $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
 $script:LogFile = Join-Path $logDir "pre-trim-$script:TS.log"
-Log "=== Coco å‰ç½®è£å‰ª v$script:VER $script:TS ==="
+Log "=== Coco Ç°ÖÃ²Ã¼ô v$script:VER $script:TS ==="
 Log "GAME=$($script:GAME)"
 Log "CACHE=$($script:CACHE)"
 Log "MODEARGS inPlace=$InPlace plan=$Plan list=$ListOnly pick=$Pick quiet=$Quiet"
 
-# --- é…ç½®æ–‡ä»¶ ---
+
+
+
+# --- ÅäÖÃÎÄ¼ş ---
 if (-not $CfgFile) {
-    # é…ç½®è·Ÿè„šæœ¬æ”¾ä¸€èµ·(Coco's Script\), å®ä¾‹æ ¹ç›®å½•æ”¾ä¸€ä»½ä¹Ÿè®¤
-    $cfgInScript = Join-Path $script:SCRIPT_DIR 'modæ›´æ–°æº.cfg'
-    $cfgInGame = Join-Path $script:GAME 'modæ›´æ–°æº.cfg'
-    if (Test-Path -LiteralPath $cfgInScript) { $CfgFile = $cfgInScript }
-    elseif (Test-Path -LiteralPath $cfgInGame) { $CfgFile = $cfgInGame }
-    else { $CfgFile = $cfgInScript }
+    # ÅäÖÃ¸ú½Å±¾·ÅÒ»Æğ(Coco's_Script\)
+    $CfgFile = Join-Path $script:SCRIPT_DIR 'mod¸üĞÂÔ´.cfg'
+    Info "mod¸üĞÂÔ´.cfgÂ·¾¶: $CfgFile"
 }
 $cfg = Read-CfgFile $CfgFile
 Log "CFG=$CfgFile keys=$($cfg.Keys.Count)"
-
 if (-not $ProfileName) { $ProfileName = Get-CfgValue $cfg 'PRE_PROFILE' 'default' }
 $ProfileName = "$ProfileName".Trim()
 $script:ProfileName = $ProfileName
 if ($ProfileName -and $ProfileName -ne 'default') {
-    $script:LISTNAME = '[å®¢æˆ·ç«¯]æ¨¡ç»„è£å‰ªæ¸…å•.' + ($ProfileName -replace '[\\/:*?"<>|]', '_') + '.txt'
+    $script:LISTNAME = '[¿Í»§¶Ë]Ä£×é²Ã¼ôÇåµ¥.' + ($ProfileName -replace '[\\/:*?"<>|]', '_') + '.txt'
 } else {
     $script:LISTNAME = $LIST_DEFAULT
 }
@@ -748,7 +748,7 @@ $script:LISTNAME = Split-Path -Leaf $ListFile
 
 if (-not $Mode) { $Mode = (Get-CfgValue $cfg 'PRE_TRIM_MODE' 'blacklist').ToLowerInvariant() }
 if ($Mode -ne 'whitelist') { $Mode = 'blacklist' }
-# æ¸…å•é‡Œçš„ MODE= è¡Œä¼˜å…ˆçº§é«˜äº cfg, ä½†ä½äºå‘½ä»¤è¡Œ -Mode
+# Çåµ¥ÀïµÄ MODE= ĞĞÓÅÏÈ¼¶¸ßÓÚ cfg, µ«µÍÓÚÃüÁîĞĞ -Mode
 if (-not $PSBoundParameters.ContainsKey('Mode') -and (Test-Path -LiteralPath $ListFile)) {
     $preMode = (Read-TrimList $ListFile).Mode
     if ($preMode) { $Mode = $preMode }
@@ -757,78 +757,37 @@ if (-not $PSBoundParameters.ContainsKey('Mode') -and (Test-Path -LiteralPath $Li
 $touchMods = (Get-CfgValue $cfg 'PRE_TOUCH_MODS' '1') -ne '0'
 if ($SkipMods) { $touchMods = $false }
 
-# --- å…ƒæ•°æ®ç›®å½• ---
+# --- ÔªÊı¾İÄ¿Â¼ ---
+# $script:CACHE     C:\Users\viforiy\AppData\Local\CocoScript
+# $MetaDir          C:\Users\viforiy\AppData\Local\CocoScript\meta
 if (-not $MetaDir) { $MetaDir = Join-Path $script:CACHE 'meta' }
 $metaRoot = $null
-if (Test-Path -LiteralPath (Join-Path $MetaDir 'pack.toml')) {
-    $metaRoot = (Resolve-Path -LiteralPath $MetaDir).Path.TrimEnd('\')
+$temp = Join-Path $MetaDir 'Coco_Minecraft_CustomModPack-main'
+if (Test-Path -LiteralPath (Join-Path $temp 'pack.toml')) {
+    $metaRoot = (Resolve-Path -LiteralPath $temp).Path.TrimEnd('\')
 }
-if (-not $metaRoot) {
-    Info 'æœ¬æœºè¿˜æ²¡æœ‰ packwiz å…ƒæ•°æ®ç¼“å­˜, å…ˆè·‘ä¸€æ¬¡ [å®¢æˆ·ç«¯]modæ›´æ–°è„šæœ¬.bat å†æ¥'
-    Warn "æ²¡æœ‰å…ƒæ•°æ®ç›®å½•: $MetaDir"
+if (-not $metaRoot){
+    Info '±¾»ú»¹Ã»ÓĞ packwiz ÔªÊı¾İ»º´æ, ÏÈÅÜÒ»´Î [¿Í»§¶Ë]mod¸üĞÂ½Å±¾.bat ÔÙÀ´'
+    Warn "Ã»ÓĞÔªÊı¾İÄ¿Â¼: $MetaDir"
     Log 'abort: meta missing'
     if ($Hard) { exit 1 }
     exit 0
 }
+
 $script:META = $metaRoot
-$git = Find-Git
 
-# --- -Fresh: å•ç‹¬è·‘çš„æ—¶å€™å…ˆæŠŠç¼“å­˜é‡Œçš„å…ƒæ•°æ®æ‹‰åˆ°æœ€æ–°, æ›´æ–°è„šæœ¬å†…éƒ¨è°ƒç”¨æ—¶ä¸ç”¨(å®ƒåˆšåŒæ­¥è¿‡) ---
-if ($Fresh) {
-    if (-not $InPlace -and $git -and (Test-Path -LiteralPath (Join-Path $metaRoot '.git'))) {
-        Info 'åŒæ­¥å…ƒæ•°æ®ä»“ (-Fresh)'
-        $rf = Invoke-Native $git @('-C', $metaRoot, '-c', 'core.autocrlf=false', 'fetch', '--depth', '1', 'origin')
-        if ($rf.ExitCode -eq 0) {
-            $rr = Invoke-Native $git @('-C', $metaRoot, 'reset', '--hard', 'FETCH_HEAD')
-            if ($rr.ExitCode -eq 0) { Ok 'å…ƒæ•°æ®å·²æ›´æ–°åˆ°è¿œç«¯æœ€æ–°' } else { Warn "git reset å¤±è´¥ rc=$($rr.ExitCode)" }
-        } else {
-            Warn "git fetch å¤±è´¥ rc=$($rf.ExitCode), ç»§ç»­ç”¨æœ¬æœºç¼“å­˜"
-        }
-    } else {
-        Info 'æ›´æ–°è„šæœ¬å†…éƒ¨è°ƒç”¨æˆ–æ²¡æœ‰ git, è·³è¿‡ -Fresh åŒæ­¥'
-    }
-}
-
-# --- å…ƒæ•°æ®ä½“æ£€: *.pw.toml å¿…é¡»æ˜¯åˆæ³• UTF-8, å¦åˆ™ packwiz-installer ä¼šæ‹¿ ParseError ç›´æ¥å¤±è´¥ ---
-# (å†å²ä¸Šå‡ºç°è¿‡ GBK å­˜çš„ filename æ··è¿› UTF-8 æ–‡ä»¶é‡Œ, ä¸€è£…å°±æŠ¥ disallowed character 65533)
-$badMeta = @()
-foreach ($mf in (Get-ChildItem -LiteralPath $metaRoot -Recurse -File -Filter '*.pw.toml' -ErrorAction SilentlyContinue)) {
-    try {
-        $null = (New-Object System.Text.UTF8Encoding($false, $true)).GetString([System.IO.File]::ReadAllBytes($mf.FullName))
-        continue
-    } catch { }
-    $rel = $mf.FullName.Substring($metaRoot.Length).TrimStart('\').Replace('\', '/')
-    # èƒ½å°±åœ°æ•‘å›æ¥å°±å…ˆæ•‘: é€å­—èŠ‚æŒ‰ UTF-8 è§£, è§£ä¸åŠ¨çš„æŒ‰ GBK åŒå­—èŠ‚è½¬æˆ UTF-8
-    # åªæ”¹æœ¬æœºç¼“å­˜é‡Œçš„è¿™ä»½(git æ¯æ¬¡éƒ½ä¼šé‡ç½®å›æ¥), ç´¢å¼•ç”±æ›´æ–°è„šæœ¬éšåé‡å»º
-    if (Repair-MixedUtf8 $mf.FullName) {
-        $script:Changed = 1
-        Warn "å…ƒæ•°æ®é‡Œæ··è¿›äº† GBK å­—èŠ‚, å·²åœ¨æœ¬æœºç¼“å­˜è‡ªåŠ¨è½¬æˆ UTF-8: $rel  â€”â€” ä»“åº“é‡Œé‚£ä»½è¿˜æ˜¯åçš„, è¯·ä¸€å¹¶ä¿®æ‰"
-    } else {
-        $badMeta += $rel
-    }
-}
-foreach ($bm in $badMeta) {
-    Warn "å…ƒæ•°æ®ä¸æ˜¯åˆæ³• UTF-8, å®‰è£…å™¨ä¼š ParseError: $bm  â€”â€” ç”¨ç¼–è¾‘å™¨å¦å­˜ä¸º UTF-8 å† packwiz refresh"
-}
-
-$gitHead = ''
-if ($git -and (Test-Path -LiteralPath (Join-Path $metaRoot '.git'))) {
-    $r = Invoke-Native $git @('-C', $metaRoot, 'rev-parse', '--short', 'HEAD')
-    if ($r.ExitCode -eq 0 -and $r.Output.Count -gt 0) { $gitHead = "$($r.Output[0])".Trim() }
-}
-
-# --- åˆ†ç±» ---
+# --- ·ÖÀà ---
 Say ''
-Say "Coco's æ•´åˆåŒ… - å®¢æˆ·ç«¯ Mod è£å‰ª (mods-clip)"
+Say "Coco's ÕûºÏ°ü - ¿Í»§¶Ë Mod ²Ã¼ô (mods-clip)"
 Say '  ------------------------------------------------------------------'
-Say "  æ•´åˆåŒ…ç›®å½• : $($script:GAME)"
-Say "  å…ƒæ•°æ®ç›®å½• : $metaRoot$(if ($gitHead) { "  (git $gitHead)" })"
-Say "  è£å‰ªæ¸…å•   : $ListFile"
-Say "  è£å‰ªæ¨¡å¼   : $Mode"
+Say "  ÕûºÏ°üÄ¿Â¼ : $($script:GAME)"
+Say "  ÔªÊı¾İÄ¿Â¼ : $metaRoot$(if ($gitHead) { "  (git $gitHead)" })"
+Say "  ²Ã¼ôÇåµ¥   : $ListFile"
+Say "  ²Ã¼ôÄ£Ê½   : $Mode"
 
 $entries = Get-ModEntries $metaRoot
 if ($entries.Count -eq 0) {
-    Info 'å…ƒæ•°æ®é‡Œæ²¡æœ‰ mods/*.pw.toml, æ²¡æœ‰å¯åˆ†ç±»çš„æ¨¡ç»„'
+    Info 'ÔªÊı¾İÀïÃ»ÓĞ mods/*.pw.toml, Ã»ÓĞ¿É·ÖÀàµÄÄ£×é'
     Log 'abort: no entries'
     if ($Hard) { exit 1 }
     exit 0
@@ -839,11 +798,11 @@ $serverList = @($entries | Where-Object { $_.Side -eq 'server' } | Sort-Object N
 $hostedList = @($entries | Where-Object { $_.Side -eq 'hosted' } | Sort-Object Name)
 Log "classify total=$($entries.Count) client=$($clientList.Count) both=$($bothList.Count) server=$($serverList.Count) hosted=$($hostedList.Count)"
 
-$countLine = "å…ƒæ•°æ® $($entries.Count) ä¸ª: ä»…å®¢æˆ·ç«¯ $($clientList.Count) / åŒç«¯ $($bothList.Count) / ä»…æœåŠ¡ç«¯ $($serverList.Count)"
-if ($hostedList.Count -gt 0) { $countLine += " / æ‰˜ç®¡ $($hostedList.Count)" }
+$countLine = "ÔªÊı¾İ $($entries.Count) ¸ö: ½ö¿Í»§¶Ë $($clientList.Count) / Ë«¶Ë $($bothList.Count) / ½ö·şÎñ¶Ë $($serverList.Count)"
+if ($hostedList.Count -gt 0) { $countLine += " / ÍĞ¹Ü $($hostedList.Count)" }
 Info $countLine
 
-# --- åŒä¸€ä¸ªè½ç›˜ jar è¢«å¤šä»½å…ƒæ•°æ®å¼•ç”¨(metafile ä¸æ‰˜ç®¡ jar æ’è½¦)æ—¶æç¤º ---
+# --- Í¬Ò»¸öÂäÅÌ jar ±»¶à·İÔªÊı¾İÒıÓÃ(metafile ÓëÍĞ¹Ü jar ×²³µ)Ê±ÌáÊ¾ ---
 $byTarget = @{}
 foreach ($e in $entries) {
     if (-not $e.FileName) { continue }
@@ -853,45 +812,45 @@ foreach ($e in $entries) {
 }
 foreach ($k in $byTarget.Keys) {
     if ($byTarget[$k].Count -le 1) { continue }
-    $rels = @($byTarget[$k] | ForEach-Object { $_.Rel }) -join ' å’Œ '
-    Warn "åŒä¸€ä¸ª jar è¢«å¤šä»½å…ƒæ•°æ®å¼•ç”¨: $($byTarget[$k][0].FileName) -> $rels (è¦è£å°±ä¸¤è¡Œä¸€èµ·è£)"
+    $rels = @($byTarget[$k] | ForEach-Object { $_.Rel }) -join ' ºÍ '
+    Warn "Í¬Ò»¸ö jar ±»¶à·İÔªÊı¾İÒıÓÃ: $($byTarget[$k][0].FileName) -> $rels (Òª²Ã¾ÍÁ½ĞĞÒ»Æğ²Ã)"
 }
 
-# --- æ¸…å•: ç”Ÿæˆ / åˆå¹¶ / é‡ç½® ---
+# --- Çåµ¥: Éú³É / ºÏ²¢ / ÖØÖÃ ---
 if ($Reset) {
     if (Test-Path -LiteralPath $ListFile) {
         $bak = "$ListFile.bak-$script:TS"
         Copy-Item -LiteralPath $ListFile -Destination $bak -Force
-        Info "æ—§æ¸…å•å·²å¤‡ä»½: $bak"
+        Info "¾ÉÇåµ¥ÒÑ±¸·İ: $bak"
     }
     Write-Text936 $ListFile (New-TrimListText $entries $Mode $metaRoot)
-    Ok "è£å‰ªæ¸…å•å·²é‡å»º(å…¨éƒ¨ä¿ç•™): $ListFile"
+    Ok "²Ã¼ôÇåµ¥ÒÑÖØ½¨(È«²¿±£Áô): $ListFile"
     Log "list reset -> $ListFile"
 } elseif (-not (Test-Path -LiteralPath $ListFile)) {
     Write-Text936 $ListFile (New-TrimListText $entries $Mode $metaRoot)
-    Ok "è£å‰ªæ¸…å•å·²ç”Ÿæˆ: $ListFile"
-    Info 'é»˜è®¤å…¨éƒ¨ä¿ç•™; æƒ³è£å“ªä¸ªå°±å»æ‰è¯¥è¡Œè¡Œé¦–çš„ #'
+    Ok "²Ã¼ôÇåµ¥ÒÑÉú³É: $ListFile"
+    Info 'Ä¬ÈÏÈ«²¿±£Áô; Ïë²ÃÄÄ¸ö¾ÍÈ¥µô¸ÃĞĞĞĞÊ×µÄ #'
     Log "list seeded -> $ListFile"
 } else {
     $upd = Update-TrimList $ListFile $entries
-    if ($upd.Pruned -gt 0) { Info "æ¸…å•é‡Œæ¸…æ‰äº† $($upd.Pruned) æ¡è¿‡æœŸæ¡ç›®(å…ƒæ•°æ®é‡Œå·²ç»æ²¡æœ‰è¿™ä¸ªæ–‡ä»¶)" }
-    if ($upd.Added -gt 0) { Info "æ¸…å•é‡Œè¡¥ä¸Šäº†æ–°å¢çš„ $($upd.Added) ä¸ªæ¨¡ç»„(é»˜è®¤ä¿ç•™)" }
+    if ($upd.Pruned -gt 0) { Info "Çåµ¥ÀïÇåµôÁË $($upd.Pruned) Ìõ¹ıÆÚÌõÄ¿(ÔªÊı¾İÀïÒÑ¾­Ã»ÓĞÕâ¸öÎÄ¼ş)" }
+    if ($upd.Added -gt 0) { Info "Çåµ¥Àï²¹ÉÏÁËĞÂÔöµÄ $($upd.Added) ¸öÄ£×é(Ä¬ÈÏ±£Áô)" }
 }
 
 $state = Read-TrimList $ListFile
 if ($state.Mode -and $state.Mode -ne $Mode -and -not $PSBoundParameters.ContainsKey('Mode')) {
     $Mode = $state.Mode
-    Info "æ¸…å•é‡ŒæŒ‡å®šäº† MODE=$Mode, æŒ‰æ¸…å•æ¥"
+    Info "Çåµ¥ÀïÖ¸¶¨ÁË MODE=$Mode, °´Çåµ¥À´"
 }
 
-# --- è®¡ç®—è£å‰ªé›†åˆ ---
+# --- ¼ÆËã²Ã¼ô¼¯ºÏ ---
 $known = @{}
 foreach ($e in $entries) { $known[$e.Rel] = $e }
 foreach ($id in $state.Trim.Keys) {
-    if (-not $known.ContainsKey($id)) { Warn "æ¸…å•é‡Œçš„è£å‰ªé¡¹åœ¨å…ƒæ•°æ®é‡Œæ‰¾ä¸åˆ°, å·²å¿½ç•¥: $id" }
+    if (-not $known.ContainsKey($id)) { Warn "Çåµ¥ÀïµÄ²Ã¼ôÏîÔÚÔªÊı¾İÀïÕÒ²»µ½, ÒÑºöÂÔ: $id" }
 }
 foreach ($id in $state.Keep.Keys) {
-    if (-not $known.ContainsKey($id)) { Warn "æ¸…å•é‡Œçš„ä¿ç•™é¡¹åœ¨å…ƒæ•°æ®é‡Œæ‰¾ä¸åˆ°, å·²å¿½ç•¥: $id" }
+    if (-not $known.ContainsKey($id)) { Warn "Çåµ¥ÀïµÄ±£ÁôÏîÔÚÔªÊı¾İÀïÕÒ²»µ½, ÒÑºöÂÔ: $id" }
 }
 
 $toTrim = New-Object System.Collections.ArrayList
@@ -900,10 +859,10 @@ foreach ($e in $entries) {
     $why = ''
     if ($state.Trim.ContainsKey($e.Rel)) {
         $trim = $true
-        $why = 'æ¸…å•æŒ‡å®š'
+        $why = 'Çåµ¥Ö¸¶¨'
     } elseif ($Mode -eq 'whitelist' -and $e.Side -eq 'client' -and -not $state.Keep.ContainsKey($e.Rel)) {
         $trim = $true
-        $why = 'ç™½åå•æœªåˆ—å‡º'
+        $why = '°×Ãûµ¥Î´ÁĞ³ö'
     }
     if ($trim -and $state.Keep.ContainsKey($e.Rel)) {
         $trim = $false
@@ -912,30 +871,30 @@ foreach ($e in $entries) {
     if ($trim) { $e.Trim = $true; $e.Reason = $why; [void]$toTrim.Add($e) }
 }
 
-# --- æ‹¦ä¸€é“: ä¸€æ¬¡è£å¤ªå¤šå°±åªå‡ºæŠ¥å‘Š, ä¸åŠ¨æ–‡ä»¶ ---
+# --- À¹Ò»µÀ: Ò»´Î²ÃÌ«¶à¾ÍÖ»³ö±¨¸æ, ²»¶¯ÎÄ¼ş ---
 function Test-TrimBlocked($list, $allEntries) {
     if ($list.Count -eq 0) { return $false }
     $maxTrim = 0
     $maxTxt = Get-CfgValue $cfg 'PRE_MAX_TRIM' '0'
     if ($maxTxt -match '^\d+$') { $maxTrim = [int]$maxTxt }
     if ($maxTrim -gt 0 -and $list.Count -gt $maxTrim) {
-        Warn "æœ¬æ¬¡è¦è£ $($list.Count) ä¸ª, è¶…è¿‡ PRE_MAX_TRIM=$maxTrim, å·²æ‹¦ä¸‹ä¸æ”¹æ–‡ä»¶"
+        Warn "±¾´ÎÒª²Ã $($list.Count) ¸ö, ³¬¹ı PRE_MAX_TRIM=$maxTrim, ÒÑÀ¹ÏÂ²»¸ÄÎÄ¼ş"
         return $true
     }
     if ($list.Count -gt 20 -and $list.Count -ge [math]::Floor($allEntries.Count * 0.9)) {
-        Warn "æœ¬æ¬¡è¦è£ $($list.Count) / $($allEntries.Count) ä¸ªæ¨¡ç»„, æ¯”ä¾‹å¤ªé«˜, å·²æ‹¦ä¸‹ä¸æ”¹æ–‡ä»¶"
-        Warn 'ç¡®å®æ˜¯è¿™ä¸ªæ‰“ç®—çš„è¯, åœ¨ modæ›´æ–°æº.cfg é‡Œå†™ PRE_MAX_TRIM=æ¡ç›®æ•° å†è·‘'
+        Warn "±¾´ÎÒª²Ã $($list.Count) / $($allEntries.Count) ¸öÄ£×é, ±ÈÀıÌ«¸ß, ÒÑÀ¹ÏÂ²»¸ÄÎÄ¼ş"
+        Warn 'È·ÊµÊÇÕâ¸ö´òËãµÄ»°, ÔÚ mod¸üĞÂÔ´.cfg ÀïĞ´ PRE_MAX_TRIM=ÌõÄ¿Êı ÔÙÅÜ'
         return $true
     }
     return $false
 }
 
-# --- äº¤äº’æŒ‘é€‰ ---
+# --- ½»»¥ÌôÑ¡ ---
 function Invoke-Picker {
     if (-not $Pick) { return }
     if ($script:IsQuiet) { return }
     if ([Console]::IsInputRedirected) {
-        Say '  (æ£€æµ‹åˆ°æ ‡å‡†è¾“å…¥è¢«é‡å®šå‘, è·³è¿‡äº¤äº’æŒ‘é€‰)'
+        Say '  (¼ì²âµ½±ê×¼ÊäÈë±»ÖØ¶¨Ïò, Ìø¹ı½»»¥ÌôÑ¡)'
         return
     }
     $pool = @($entries | Where-Object { $_.Side -eq 'client' } | Sort-Object Name)
@@ -943,21 +902,21 @@ function Invoke-Picker {
     $st = Read-TrimList $ListFile
     while ($true) {
         Write-Host ''
-        Write-Host '  ============ å¯è£å‰ªçš„ä»…å®¢æˆ·ç«¯æ¨¡ç»„ ============'
+        Write-Host '  ============ ¿É²Ã¼ôµÄ½ö¿Í»§¶ËÄ£×é ============'
         for ($i = 0; $i -lt $pool.Count; $i++) {
             $e = $pool[$i]
-            $mark = '  ä¿ç•™'
-            if ($st.Trim.ContainsKey($e.Rel)) { $mark = '  è£å‰ª' }
-            $sizeTxt = 'æœªå®‰è£…'
+            $mark = '  ±£Áô'
+            if ($st.Trim.ContainsKey($e.Rel)) { $mark = '  ²Ã¼ô' }
+            $sizeTxt = 'Î´°²×°'
             if ($e.Installed) { $sizeTxt = Get-FileSizeText $e.Size }
             $libTxt = ''
-            if ($e.IsLib) { $libTxt = ' [å‰ç½®åº“?]' }
+            if ($e.IsLib) { $libTxt = ' [Ç°ÖÃ¿â?]' }
             Write-Host ("  [{0,3}] {1}  {2,-34} {3,-10}{4}" -f ($i + 1), $mark, $e.Name, $sizeTxt, $libTxt)
         }
         $trimmedNow = @($pool | Where-Object { $st.Trim.ContainsKey($_.Rel) }).Count
         Write-Host ''
-        Write-Host "  å½“å‰: è£å‰ª $trimmedNow / ä¿ç•™ $($pool.Count - $trimmedNow)"
-        Write-Host '  è¾“å…¥ç¼–å·(ç©ºæ ¼æˆ–é€—å·åˆ†éš”)åˆ‡æ¢è£å‰ª/ä¿ç•™, a=å…¨è£ n=å…¨ç•™ l=é‡åˆ— q=å®Œæˆé€€å‡º:'
+        Write-Host "  µ±Ç°: ²Ã¼ô $trimmedNow / ±£Áô $($pool.Count - $trimmedNow)"
+        Write-Host '  ÊäÈë±àºÅ(¿Õ¸ñ»ò¶ººÅ·Ö¸ô)ÇĞ»»²Ã¼ô/±£Áô, a=È«²Ã n=È«Áô l=ÖØÁĞ q=Íê³ÉÍË³ö:'
         $ans = Read-Host '  > '
         if ($null -eq $ans) { break }
         $ans = "$ans".Trim()
@@ -974,7 +933,7 @@ function Invoke-Picker {
             continue
         }
         $nums = [regex]::Matches($ans, '\d+')
-        if ($nums.Count -eq 0) { Write-Host '  æ²¡çœ‹æ‡‚, å†è¯•ä¸€æ¬¡'; continue }
+        if ($nums.Count -eq 0) { Write-Host '  Ã»¿´¶®, ÔÙÊÔÒ»´Î'; continue }
         foreach ($m in $nums) {
             $idx = [int]$m.Value
             if ($idx -lt 1 -or $idx -gt $pool.Count) { continue }
@@ -987,13 +946,13 @@ function Invoke-Picker {
     if ($pool.Count -gt 0) {
         $st2 = Read-TrimList $ListFile
         $cnt = @($pool | Where-Object { $st2.Trim.ContainsKey($_.Rel) }).Count
-        Ok "æ¸…å•å·²ä¿å­˜, ä»…å®¢æˆ·ç«¯æ¨¡ç»„è£å‰ª $cnt / $($pool.Count)"
+        Ok "Çåµ¥ÒÑ±£´æ, ½ö¿Í»§¶ËÄ£×é²Ã¼ô $cnt / $($pool.Count)"
     }
 }
 
 Invoke-Picker
 
-# äº¤äº’ä¹‹åé‡æ–°è®¡ç®—ä¸€é, ä¿è¯ä¸æœ€ç»ˆæ¸…å•ä¸€è‡´
+# ½»»¥Ö®ºóÖØĞÂ¼ÆËãÒ»±é, ±£Ö¤Óë×îÖÕÇåµ¥Ò»ÖÂ
 $state = Read-TrimList $ListFile
 $toTrim = New-Object System.Collections.ArrayList
 foreach ($e in $entries) {
@@ -1002,10 +961,10 @@ foreach ($e in $entries) {
     $trim = $false
     if ($state.Trim.ContainsKey($e.Rel)) {
         $trim = $true
-        $e.Reason = 'æ¸…å•æŒ‡å®š'
+        $e.Reason = 'Çåµ¥Ö¸¶¨'
     } elseif ($Mode -eq 'whitelist' -and $e.Side -eq 'client' -and -not $state.Keep.ContainsKey($e.Rel)) {
         $trim = $true
-        $e.Reason = 'ç™½åå•æœªåˆ—å‡º'
+        $e.Reason = '°×Ãûµ¥Î´ÁĞ³ö'
     }
     if ($trim -and $state.Keep.ContainsKey($e.Rel)) { $trim = $false; $e.Reason = '' }
     if ($trim) { $e.Trim = $true; [void]$toTrim.Add($e) }
@@ -1018,9 +977,9 @@ $script:TrimCount = $toTrim.Count
 
 foreach ($e in $toTrim) { Log "trim $($e.Rel) side=$($e.Side) name=$($e.Name) why=$($e.Reason)" }
 
-# --- æ‰§è¡Œ: åˆ å…ƒæ•°æ® / åˆ  jar / åˆ·ç´¢å¼• ---
+# --- Ö´ĞĞ: É¾ÔªÊı¾İ / É¾ jar / Ë¢Ë÷Òı ---
 $applyFiles = (-not $ListOnly) -and (-not $Plan)
-if ($ListOnly) { Info 'åªåˆ—åˆ†ç±»(-List), ä¸æ”¹ä»»ä½•æ–‡ä»¶' }
+if ($ListOnly) { Info 'Ö»ÁĞ·ÖÀà(-List), ²»¸ÄÈÎºÎÎÄ¼ş' }
 
 if ($toTrim.Count -gt 0) {
     if ($applyFiles) {
@@ -1029,10 +988,10 @@ if ($toTrim.Count -gt 0) {
             $p = Join-Path $metaRoot ($e.Rel.Replace('/', '\'))
             if (Test-Path -LiteralPath $p) {
                 try { Remove-Item -LiteralPath $p -Force; $removed++; $script:Changed = 1 }
-                catch { Warn "åˆ ä¸æ‰å…ƒæ•°æ®æ–‡ä»¶: $p  $($_.Exception.Message)" }
+                catch { Warn "É¾²»µôÔªÊı¾İÎÄ¼ş: $p  $($_.Exception.Message)" }
             }
         }
-        Ok "å·²ä»å…ƒæ•°æ®åˆ é™¤ $removed ä¸ª metafile"
+        Ok "ÒÑ´ÓÔªÊı¾İÉ¾³ı $removed ¸ö metafile"
 
         if ($touchMods) {
             $modsDir = Join-Path $script:GAME 'mods'
@@ -1048,76 +1007,76 @@ if ($toTrim.Count -gt 0) {
                     $script:Changed = 1
                     Log "jar removed $jar ($sz bytes)"
                 } catch {
-                    Warn "åˆ ä¸æ‰ jar(æ¸¸æˆå¯èƒ½æ­£å¼€ç€): $jar"
+                    Warn "É¾²»µô jar(ÓÎÏ·¿ÉÄÜÕı¿ª×Å): $jar"
                 }
             }
-            if ($script:JarDeleted -gt 0) { Ok "å·²ä» mods åˆ é™¤ $($script:JarDeleted) ä¸ª jar, å…± $(Get-FileSizeText $script:JarBytes)" }
+            if ($script:JarDeleted -gt 0) { Ok "ÒÑ´Ó mods É¾³ı $($script:JarDeleted) ¸ö jar, ¹² $(Get-FileSizeText $script:JarBytes)" }
         }
 
         if ($InPlace) {
-            $script:RefreshState = 'äº¤ç»™æ›´æ–°è„šæœ¬åˆ·æ–°'
+            $script:RefreshState = '½»¸ø¸üĞÂ½Å±¾Ë¢ĞÂ'
         } elseif ($SkipRefresh) {
-            $script:RefreshState = 'è·³è¿‡(-SkipRefresh)'
+            $script:RefreshState = 'Ìø¹ı(-SkipRefresh)'
         } else {
             if (Invoke-Refresh $metaRoot) {
                 $chk = Test-IndexHash $metaRoot
                 if (-not $chk.Ok) {
-                    Warn "ç´¢å¼•å“ˆå¸Œæ ¡éªŒä¸è¿‡: $($chk.Msg)"
+                    Warn "Ë÷Òı¹şÏ£Ğ£Ñé²»¹ı: $($chk.Msg)"
                     if (Repair-IndexHash $metaRoot) {
                         $chk2 = Test-IndexHash $metaRoot
-                        if ($chk2.Ok) { Ok 'å·²æ‰‹å·¥æ”¹å†™ pack.toml çš„ index.hash' } else { Warn "æ‰‹å·¥æ”¹å†™åä»ä¸ä¸€è‡´: $($chk2.Msg)" }
+                        if ($chk2.Ok) { Ok 'ÒÑÊÖ¹¤¸ÄĞ´ pack.toml µÄ index.hash' } else { Warn "ÊÖ¹¤¸ÄĞ´ºóÈÔ²»Ò»ÖÂ: $($chk2.Msg)" }
                     }
                 }
             } else {
-                Warn 'packwiz refresh æ²¡æˆåŠŸ, index.toml å¯èƒ½è¿˜ç•™ç€å·²åˆ çš„ metafile, å®‰è£…å™¨ä¼šæŠ¥ 404'
+                Warn 'packwiz refresh Ã»³É¹¦, index.toml ¿ÉÄÜ»¹Áô×ÅÒÑÉ¾µÄ metafile, °²×°Æ÷»á±¨ 404'
             }
         }
     } else {
-        $script:RefreshState = 'plan æ¨¡å¼æœªåˆ·æ–°'
-        Info "æœ¬æ¬¡å°†è£å‰ª $($toTrim.Count) ä¸ªæ¨¡ç»„(plan æ¨¡å¼, æœªåŠ¨æ–‡ä»¶)"
+        $script:RefreshState = 'plan Ä£Ê½Î´Ë¢ĞÂ'
+        Info "±¾´Î½«²Ã¼ô $($toTrim.Count) ¸öÄ£×é(plan Ä£Ê½, Î´¶¯ÎÄ¼ş)"
     }
 } else {
-    $script:RefreshState = 'æ— éœ€åˆ·æ–°'
-    Info 'æ¸…å•é‡Œæ²¡æœ‰è¦è£å‰ªçš„æ¨¡ç»„, å…¨éƒ¨ä¿ç•™'
+    $script:RefreshState = 'ÎŞĞèË¢ĞÂ'
+    Info 'Çåµ¥ÀïÃ»ÓĞÒª²Ã¼ôµÄÄ£×é, È«²¿±£Áô'
 }
 
-# --- æŠ¥å‘Š ---
+# --- ±¨¸æ ---
 $sb = New-Object System.Text.StringBuilder
 [void]$sb.AppendLine('=' * 78)
-[void]$sb.AppendLine("Coco's æ•´åˆåŒ… Â· å®¢æˆ·ç«¯æ¨¡ç»„åˆ†ç±»ä¸è£å‰ªæŠ¥å‘Š")
+[void]$sb.AppendLine("Coco's ÕûºÏ°ü ¡¤ ¿Í»§¶ËÄ£×é·ÖÀàÓë²Ã¼ô±¨¸æ")
 [void]$sb.AppendLine('=' * 78)
-[void]$sb.AppendLine("ç”Ÿæˆæ—¶é—´      : $script:Now")
-[void]$sb.AppendLine("è„šæœ¬ç‰ˆæœ¬      : v$script:VER")
-[void]$sb.AppendLine("æ•´åˆåŒ…ç›®å½•    : $($script:GAME)")
-[void]$sb.AppendLine("å…ƒæ•°æ®ç›®å½•    : $metaRoot")
-if ($gitHead) { [void]$sb.AppendLine("å…ƒæ•°æ®ç‰ˆæœ¬    : git $gitHead") }
-[void]$sb.AppendLine("è£å‰ªæ¸…å•      : $ListFile")
-[void]$sb.AppendLine("è£å‰ªæ¨¡å¼      : $Mode")
+[void]$sb.AppendLine("Éú³ÉÊ±¼ä      : $script:Now")
+[void]$sb.AppendLine("½Å±¾°æ±¾      : v$script:VER")
+[void]$sb.AppendLine("ÕûºÏ°üÄ¿Â¼    : $($script:GAME)")
+[void]$sb.AppendLine("ÔªÊı¾İÄ¿Â¼    : $metaRoot")
+if ($gitHead) { [void]$sb.AppendLine("ÔªÊı¾İ°æ±¾    : git $gitHead") }
+[void]$sb.AppendLine("²Ã¼ôÇåµ¥      : $ListFile")
+[void]$sb.AppendLine("²Ã¼ôÄ£Ê½      : $Mode")
 $pwz = Find-Packwiz
 if ($pwz) { [void]$sb.AppendLine("packwiz       : $pwz") }
-[void]$sb.AppendLine("ç´¢å¼•åˆ·æ–°      : $($script:RefreshState)")
+[void]$sb.AppendLine("Ë÷ÒıË¢ĞÂ      : $($script:RefreshState)")
 [void]$sb.AppendLine('')
-[void]$sb.AppendLine('æ¨¡ç»„åˆ†ç±»ç»Ÿè®¡')
+[void]$sb.AppendLine('Ä£×é·ÖÀàÍ³¼Æ')
 [void]$sb.AppendLine('-' * 78)
-[void]$sb.AppendLine("æ€»è®¡ metafile       : $($entries.Count)")
-[void]$sb.AppendLine("ä»…å®¢æˆ·ç«¯ side=client: $($clientList.Count)")
-[void]$sb.AppendLine("åŒç«¯     side=both   : $($bothList.Count)")
-[void]$sb.AppendLine("ä»…æœåŠ¡ç«¯ side=server: $($serverList.Count)")
-[void]$sb.AppendLine("æ‰˜ç®¡     ä»“å†…æ–‡ä»¶    : $($hostedList.Count)")
-[void]$sb.AppendLine("æœ¬æ¬¡è£å‰ª            : $($toTrim.Count)")
-[void]$sb.AppendLine("å·²åˆ  jar            : $($script:JarDeleted) ä¸ª, $(Get-FileSizeText $script:JarBytes)")
+[void]$sb.AppendLine("×Ü¼Æ metafile       : $($entries.Count)")
+[void]$sb.AppendLine("½ö¿Í»§¶Ë side=client: $($clientList.Count)")
+[void]$sb.AppendLine("Ë«¶Ë     side=both   : $($bothList.Count)")
+[void]$sb.AppendLine("½ö·şÎñ¶Ë side=server: $($serverList.Count)")
+[void]$sb.AppendLine("ÍĞ¹Ü     ²ÖÄÚÎÄ¼ş    : $($hostedList.Count)")
+[void]$sb.AppendLine("±¾´Î²Ã¼ô            : $($toTrim.Count)")
+[void]$sb.AppendLine("ÒÑÉ¾ jar            : $($script:JarDeleted) ¸ö, $(Get-FileSizeText $script:JarBytes)")
 [void]$sb.AppendLine('')
 if ($toTrim.Count -gt 0) {
-    [void]$sb.AppendLine('æœ¬æ¬¡è£å‰ªçš„æ¨¡ç»„')
+    [void]$sb.AppendLine('±¾´Î²Ã¼ôµÄÄ£×é')
     [void]$sb.AppendLine('-' * 78)
     foreach ($e in ($toTrim | Sort-Object Side, Name)) {
-        $sizeTxt = 'æœªå®‰è£…'
+        $sizeTxt = 'Î´°²×°'
         if ($e.Installed) { $sizeTxt = Get-FileSizeText $e.Size }
         [void]$sb.AppendLine(("  [{0}] {1}" -f (Get-SideText $e.Side), $e.Name))
         [void]$sb.AppendLine("      metafile : $($e.Rel)")
         [void]$sb.AppendLine("      jar      : $($e.FileName)  ($sizeTxt, $($e.Reason))")
-        if ($e.Link) { [void]$sb.AppendLine("      é“¾æ¥     : $($e.Link)") }
-        if ($e.IsLib) { [void]$sb.AppendLine('      æ³¨æ„     : åç§°åƒå‰ç½®åº“, ç¡®è®¤æ²¡æœ‰åˆ«çš„æ¨¡ç»„ä¾èµ–å®ƒ') }
+        if ($e.Link) { [void]$sb.AppendLine("      Á´½Ó     : $($e.Link)") }
+        if ($e.IsLib) { [void]$sb.AppendLine('      ×¢Òâ     : Ãû³ÆÏñÇ°ÖÃ¿â, È·ÈÏÃ»ÓĞ±ğµÄÄ£×éÒÀÀµËü') }
     }
     [void]$sb.AppendLine('')
 }
@@ -1126,38 +1085,38 @@ function Write-EntrySection($builder, [string]$title, $items, [string]$note) {
     [void]$builder.AppendLine('-' * 78)
     if ($note) { [void]$builder.AppendLine("  $note") }
     foreach ($e in $items) {
-        $flag = 'ä¿ç•™'
-        if ($e.Trim) { $flag = 'è£å‰ª' }
-        $sizeTxt = 'æœªå®‰è£…'
+        $flag = '±£Áô'
+        if ($e.Trim) { $flag = '²Ã¼ô' }
+        $sizeTxt = 'Î´°²×°'
         if ($e.Installed) { $sizeTxt = Get-FileSizeText $e.Size }
         $extra = ''
-        if ($e.IsLib) { $extra = '  [å‰ç½®åº“?]' }
-        if ($e.Optional) { $extra += '  [å¯é€‰]' }
+        if ($e.IsLib) { $extra = '  [Ç°ÖÃ¿â?]' }
+        if ($e.Optional) { $extra += '  [¿ÉÑ¡]' }
         [void]$builder.AppendLine(("[{0}] {1,-38} {2,-10} {3}{4}" -f $flag, $e.Name, $sizeTxt, $e.Rel, $extra))
     }
     [void]$builder.AppendLine('')
 }
-Write-EntrySection $sb "ä»…å®¢æˆ·ç«¯æ¨¡ç»„ ($($clientList.Count))  â€”â€” è£å‰ªæœ€å®‰å…¨çš„ä¸€æ¡£" $clientList 'è£æ‰åæœ¬æœºæ²¡æœ‰è¿™ä¸ªåŠŸèƒ½, æœåŠ¡ç«¯ä¸å…¶å®ƒäººä¸å—å½±å“'
-Write-EntrySection $sb "åŒç«¯æ¨¡ç»„ ($($bothList.Count))  â€”â€” æœåŠ¡ç«¯ä¹Ÿè£…, è£æ‰åªå½±å“æœ¬æœº" $bothList 'æ¸…å•é‡Œä¹Ÿç»™äº†è¿™äº›è¡Œ, æƒ³è£å¿…é¡»è‡ªå·±å†™ - å¼€å¤´'
-Write-EntrySection $sb "ä»…æœåŠ¡ç«¯æ¨¡ç»„ ($($serverList.Count))  â€”â€” å®¢æˆ·ç«¯å®‰è£…å™¨æœ¬æ¥å°±è·³è¿‡" $serverList 'å¹³æ—¶ä¸ç”¨ç®¡, å‡ºç°åœ¨è¿™é‡Œåªæ˜¯ä¸ºäº†åˆ†ç±»å®Œæ•´'
-Write-EntrySection $sb "æ‰˜ç®¡åœ¨å…ƒæ•°æ®ä»“çš„æ¨¡ç»„ ($($hostedList.Count))  â€”â€” æ²¡æœ‰ .pw.toml, ä¹Ÿæ²¡æœ‰ side" $hostedList 'jar ç›´æ¥æ”¾åœ¨ä»“åº“ mods\ ä¸‹, packwiz ç…§è£…ä¸¤ç«¯; è£æ‰åªå½±å“æœ¬æœº, æƒ³æ¢å¤æŠŠè¯¥è¡Œæ”¹å› # å¼€å¤´'
-[void]$sb.AppendLine('æ€ä¹ˆæ”¹')
+Write-EntrySection $sb "½ö¿Í»§¶ËÄ£×é ($($clientList.Count))  ¡ª¡ª ²Ã¼ô×î°²È«µÄÒ»µµ" $clientList '²Ãµôºó±¾»úÃ»ÓĞÕâ¸ö¹¦ÄÜ, ·şÎñ¶ËÓëÆäËüÈË²»ÊÜÓ°Ïì'
+Write-EntrySection $sb "Ë«¶ËÄ£×é ($($bothList.Count))  ¡ª¡ª ·şÎñ¶ËÒ²×°, ²ÃµôÖ»Ó°Ïì±¾»ú" $bothList 'Çåµ¥ÀïÒ²¸øÁËÕâĞ©ĞĞ, Ïë²Ã±ØĞë×Ô¼ºĞ´ - ¿ªÍ·'
+Write-EntrySection $sb "½ö·şÎñ¶ËÄ£×é ($($serverList.Count))  ¡ª¡ª ¿Í»§¶Ë°²×°Æ÷±¾À´¾ÍÌø¹ı" $serverList 'Æ½Ê±²»ÓÃ¹Ü, ³öÏÖÔÚÕâÀïÖ»ÊÇÎªÁË·ÖÀàÍêÕû'
+Write-EntrySection $sb "ÍĞ¹ÜÔÚÔªÊı¾İ²ÖµÄÄ£×é ($($hostedList.Count))  ¡ª¡ª Ã»ÓĞ .pw.toml, Ò²Ã»ÓĞ side" $hostedList 'jar Ö±½Ó·ÅÔÚ²Ö¿â mods\ ÏÂ, packwiz ÕÕ×°Á½¶Ë; ²ÃµôÖ»Ó°Ïì±¾»ú, Ïë»Ö¸´°Ñ¸ÃĞĞ¸Ä»Ø # ¿ªÍ·'
+[void]$sb.AppendLine('ÔõÃ´¸Ä')
 [void]$sb.AppendLine('-' * 78)
-[void]$sb.AppendLine("  1) æ‰“å¼€ $ListFile")
-[void]$sb.AppendLine('  2) æƒ³ä¸è£…çš„æ¨¡ç»„, æŠŠè¯¥è¡Œè¡Œé¦–çš„ # å»æ‰(å˜æˆ - å¼€å¤´); æƒ³è£…å›æ¥å†åŠ å› #')
-[void]$sb.AppendLine('  3) ä¿å­˜åä¸‹æ¬¡å¯åŠ¨æ¸¸æˆè‡ªåŠ¨ç”Ÿæ•ˆ; ä¹Ÿå¯ä»¥åŒå‡» modè£å‰ªè„šæœ¬.bat -Pick äº¤äº’æŒ‘')
-[void]$sb.AppendLine('  4) è£å‰ªåªä½œç”¨äºæœ¬æœº mods ä¸æœ¬æ¬¡å®‰è£…, å…ƒæ•°æ®ä»“å’Œåˆ«äººçš„æ•´åˆåŒ…ä¸å—å½±å“')
+[void]$sb.AppendLine("  1) ´ò¿ª $ListFile")
+[void]$sb.AppendLine('  2) Ïë²»×°µÄÄ£×é, °Ñ¸ÃĞĞĞĞÊ×µÄ # È¥µô(±ä³É - ¿ªÍ·); Ïë×°»ØÀ´ÔÙ¼Ó»Ø #')
+[void]$sb.AppendLine('  3) ±£´æºóÏÂ´ÎÆô¶¯ÓÎÏ·×Ô¶¯ÉúĞ§; Ò²¿ÉÒÔË«»÷ mod²Ã¼ô½Å±¾.bat -Pick ½»»¥Ìô')
+[void]$sb.AppendLine('  4) ²Ã¼ôÖ»×÷ÓÃÓÚ±¾»ú mods Óë±¾´Î°²×°, ÔªÊı¾İ²ÖºÍ±ğÈËµÄÕûºÏ°ü²»ÊÜÓ°Ïì')
 if ($script:Warns.Count -gt 0) {
     [void]$sb.AppendLine('')
-    [void]$sb.AppendLine('æœ¬æ¬¡è­¦å‘Š')
+    [void]$sb.AppendLine('±¾´Î¾¯¸æ')
     [void]$sb.AppendLine('-' * 78)
     foreach ($w in $script:Warns) { [void]$sb.AppendLine("  ! $w") }
 }
 $reportPath = Join-Path $script:SCRIPT_DIR $REPORT_NAME
 Write-Text936 $reportPath $sb.ToString()
-Ok "åˆ†ç±»æŠ¥å‘Š: $reportPath"
+Ok "·ÖÀà±¨¸æ: $reportPath"
 
-# --- æœºå™¨å¯è¯»æ¸…å• ---
+# --- »úÆ÷¿É¶ÁÇåµ¥ ---
 $tsv = New-Object System.Text.StringBuilder
 [void]$tsv.AppendLine("metafile`tside`tname`tfilename`tstatus`tinstalled`tbytes`tlink`tlibrary")
 foreach ($e in ($entries | Sort-Object Side, Name)) {
@@ -1173,7 +1132,7 @@ $tsvPath = Join-Path $script:CACHE 'mod-classify.tsv'
 Write-TextUtf8Bom $tsvPath $tsv.ToString()
 Log "report=$reportPath tsv=$tsvPath"
 
-# --- çŠ¶æ€æ–‡ä»¶, ç»™æ›´æ–°è„šæœ¬çœ‹ ---
+# --- ×´Ì¬ÎÄ¼ş, ¸ø¸üĞÂ½Å±¾¿´ ---
 $statePath = Join-Path $script:CACHE 'pre-trim-state.cfg'
 $stateText = New-Object System.Text.StringBuilder
 [void]$stateText.AppendLine("TS=$script:TS")
@@ -1187,17 +1146,17 @@ $stateText = New-Object System.Text.StringBuilder
 [void]$stateText.AppendLine("REFRESH=$($script:RefreshState)")
 Write-Text936 $statePath $stateText.ToString()
 
-# --- æ§åˆ¶å°æ‘˜è¦ ---
+# --- ¿ØÖÆÌ¨ÕªÒª ---
 Say ''
 if ($toTrim.Count -gt 0) {
-    Info "æœ¬æ¬¡è£å‰ª $($toTrim.Count) ä¸ªæ¨¡ç»„:"
+    Info "±¾´Î²Ã¼ô $($toTrim.Count) ¸öÄ£×é:"
     foreach ($e in ($toTrim | Sort-Object Side, Name)) {
         Say ("  - [{0}] {1}  ({2})" -f (Get-SideText $e.Side), $e.Name, $e.Rel)
     }
 }
-Say "  æ¸…å•: $ListFile"
-Say "  æŠ¥å‘Š: $reportPath"
-Say "  æ—¥å¿—: $script:LogFile"
+Say "  Çåµ¥: $ListFile"
+Say "  ±¨¸æ: $reportPath"
+Say "  ÈÕÖ¾: $script:LogFile"
 Say ''
 Log "done trimmed=$($toTrim.Count) jars=$($script:JarDeleted) changed=$($script:Changed) refresh=$($script:RefreshState)"
 
